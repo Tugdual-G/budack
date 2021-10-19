@@ -1,0 +1,12 @@
+.DS_Store
+.idea
+*.log
+tmp/
+budac.png
+*.py[cod]
+*.egg
+*.npy
+build
+htmlcov
+array
+
