@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 data = np.fromfile('array', dtype=np.ubyte)
 print(data.shape)
-data.shape = (1713, 2000)
+data.shape = (856, 1000)
 data += data[::-1, :]
 plt.imshow(data[4:-4, 4:-4])
 plt.axis("image")
