@@ -58,7 +58,7 @@ void trajectories(
                 M_traj[ij[i]][ij[i+1]] += 1;
                 if (M_traj[ij[i]][ij[i+1]]>max_acumul)
                   {
-                    max_acumul = M_traj[ij[i]][ij[i+1]];
+                    max_acumul = M_traj[ij[i]][ij[i+1]] ;
                   }
               }
           }
@@ -68,7 +68,7 @@ void trajectories(
 
 int main()
 {
-    int nx=800, ny=0;
+    int nx=2000, ny=0;
     long int N = 9000000;
     double a[2]={-2, 1.5}, b[2]={-1.5,1.5}, dx;
 
@@ -76,10 +76,10 @@ int main()
     ny = (b[1]-b[0])/dx;
     unsigned char M[ny][nx];
 
-    printf("\nnx = %d ; ny = %d \n", nx, ny);
+    printf("\nnx = %d ; ny = %d ; ny*nx= %d \n", nx, ny, ny*nx);
 
     srand((unsigned int)time(NULL));
-    trajectories(nx, ny, a, b, M, N, 20);
+    trajectories(nx, ny, a, b, M, N, 100);
 
     // Storing all trajetories on disk
     FILE *fp;
