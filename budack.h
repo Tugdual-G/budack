@@ -13,13 +13,14 @@ double randomfloat(double min, double max)
 void trajectories(
     int nx, int ny, double x_b[2],
     double y_b[2], int M_traj[ny][nx],
-    long int maxtraj, int maxit)
+    long int maxtraj, int maxit, int minit)
   {
     // Initialisation
     double dx, x, y, x0, y0, x2, y2;
     // ntraj is the nuber of trajectories.
     // it is the number of iteration for a trajectory.
-    long int ntraj = 0, it = 0, max_acumul=0;
+    long int ntraj = 0, it = 0;
+    int max_acumul = 0;
     int ij[maxit*2], i;
     char diverge=0;
 
@@ -50,7 +51,7 @@ void trajectories(
               }
             it++;
           }
-        if (diverge == 1)
+        if (diverge == 1 && it>minit)
           {
             ntraj++;
             for ( i=0; i<it-1; i+=2 )
