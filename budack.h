@@ -12,7 +12,7 @@ double randomfloat(double min, double max)
 
 void trajectories(
     int nx, int ny, double x_b[2],
-    double y_b[2], unsigned char M_traj[ny][nx],
+    double y_b[2], int M_traj[ny][nx],
     long int maxtraj, int maxit)
   {
     // Initialisation

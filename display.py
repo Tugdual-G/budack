@@ -6,7 +6,7 @@ display the content of binary files
 import numpy as np
 import matplotlib.pyplot as plt
 
-data = np.fromfile('array', dtype=np.ubyte)
+data = np.fromfile('array', dtype=np.intc)
 print(data.shape)
 data.shape = (856, 1000)
 data += data[::-1, :]
