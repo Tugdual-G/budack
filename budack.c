@@ -8,7 +8,7 @@ double randomfloat(double min, double max);
 
 void trajectories(
     int nx, int ny, double x_b[2],
-    double y_b[2], int M_traj[ny][nx],
+    double y_b[2], unsigned char M_traj[ny][nx],
     long int maxtraj, int maxit, int minit);
 
 int main()
@@ -20,15 +20,17 @@ int main()
     int rank; // the rank of the process
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int nx=1000, ny=0;
+    int nx=2000, ny=0;
     long int N = 9000000;
     N = N/world_size; // dividing the work
+    printf(" N per thread %ld \n",N );
     double a[2]={-2, 1.5}, b[2]={-1.5,1.5}, dx;
 
     dx = (a[1]-a[0]) / (nx-1);
     ny = 1+(b[1]-b[0])/dx;
     printf("ok rank %d \n", rank);
-    int M[ny][nx], M_sum[ny][nx];
+    unsigned char M[ny][nx], M_sum[ny][nx];
+    int arraysize[2]={ny, nx};
 
     //int (*M)[nx] = malloc(ny * nx);
     //int (*M_sum)[nx] = malloc(ny * nx);
@@ -37,9 +39,9 @@ int main()
     printf("\nnx = %d ; ny = %d ; ny*nx= %d \n", nx, ny, ny*nx);
 
     srand((unsigned int)time(NULL));
-    trajectories(nx, ny, a, b, M, N, 50, 10);
+    trajectories(nx, ny, a, b, M, N, 20, 5);
 
-    MPI_Reduce(&M, &M_sum, nx*ny, MPI_INT, MPI_SUM, 0,
+    MPI_Reduce(&M, &M_sum, nx*ny, MPI_UNSIGNED_CHAR, MPI_SUM, 0,
         MPI_COMM_WORLD);
 
     if (rank==0){
@@ -52,6 +54,14 @@ int main()
             exit(1);
         }
         fwrite(M_sum, sizeof(M_sum), 1, fp);
+
+        fp = fopen("arraysize", "w+");
+        if(fp == NULL)
+        {
+            printf("Error opening file\n");
+            exit(1);
+        }
+        fwrite(arraysize, sizeof(arraysize), 1, fp);
         printf("DONE \n \n");
         }
     //free(M);

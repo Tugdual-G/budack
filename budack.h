@@ -12,7 +12,7 @@ double randomfloat(double min, double max)
 
 void trajectories(
     int nx, int ny, double x_b[2],
-    double y_b[2], int M_traj[ny][nx],
+    double y_b[2], unsigned char M_traj[ny][nx],
     long int maxtraj, int maxit, int minit)
   {
     // Initialisation
@@ -21,7 +21,7 @@ void trajectories(
     // it is the number of iteration for a trajectory.
     long int ntraj = 0, it = 0;
     int max_acumul = 0;
-    int ij[maxit*2], i;
+    int ij[maxit*2], i, j;
     char diverge=0;
 
     dx = (x_b[1]-x_b[0]) / (nx-1);
@@ -62,6 +62,13 @@ void trajectories(
                     max_acumul = M_traj[ij[i]][ij[i+1]] ;
                   }
               }
+          }
+      }
+    for (i=0; i<ny; i++)
+      {
+        for (j=0; j<nx; j++)
+          {
+            M_traj[i][j] = M_traj[i][j]/4;
           }
       }
     printf("Max acumulated : %d \n", max_acumul );
