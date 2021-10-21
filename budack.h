@@ -64,12 +64,28 @@ void trajectories(
               }
           }
       }
-    for (i=0; i<ny; i++)
+    /* for (i=0; i<ny; i++) */
+    /*   { */
+    /*     for (j=0; j<nx; j++) */
+    /*       { */
+    /*         M_traj[i][j] = M_traj[i][j]/4; */
+    /*       } */
+    /*   } */
+    printf("Max acumulated : %d \n", max_acumul );
+  }
+
+int *zeros(int l, int m)
+  {
+    int *arr;
+    arr = malloc(l*m*sizeof(int));
+    unsigned int i, j;
+
+    for (i=0; i<l; i++)
       {
-        for (j=0; j<nx; j++)
+        for (j=0; j<m; j++)
           {
-            M_traj[i][j] = M_traj[i][j]/4;
+            *(arr + i*m + j) = 0;
           }
       }
-    printf("Max acumulated : %d \n", max_acumul );
+    return arr;
   }

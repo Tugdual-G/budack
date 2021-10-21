@@ -13,6 +13,7 @@ void trajectories(
 
 int main()
 {
+
     MPI_Init(NULL, NULL);      // initialize MPI environment
     int world_size; // number of processes
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -20,8 +21,14 @@ int main()
     int rank; // the rank of the process
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int nx=2000, ny=0;
+
+    int nx=2000;
     long int N = 9000000;
+    int maxit = 100;
+    int minit = 0;
+
+
+    int ny = 0;
     N = N/world_size; // dividing the work
     printf(" N per thread %ld \n",N );
     double a[2]={-2, 1.5}, b[2]={-1.5,1.5}, dx;
@@ -39,7 +46,7 @@ int main()
     printf("\nnx = %d ; ny = %d ; ny*nx= %d \n", nx, ny, ny*nx);
 
     srand((unsigned int)time(NULL));
-    trajectories(nx, ny, a, b, M, N, 20, 5);
+    trajectories(nx, ny, a, b, M, N, maxit, minit);
 
     MPI_Reduce(&M, &M_sum, nx*ny, MPI_UNSIGNED_CHAR, MPI_SUM, 0,
         MPI_COMM_WORLD);
