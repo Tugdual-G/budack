@@ -17,7 +17,7 @@ int main()
 
 
     int nx=2000;
-    long int N = 9000000;
+    long int N = 9000000/world_size;
     unsigned int maxit = 100;
     unsigned int minit = 0;
 
