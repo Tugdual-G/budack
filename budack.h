@@ -11,8 +11,8 @@ double randomfloat(double min, double max)
   }
 
 void trajectories(
-    int nx, int ny, double x_b[2],
-    double y_b[2], unsigned char M_traj[ny][nx],
+    unsigned int nx, unsigned int ny, double x_b[2],
+    double y_b[2], int *M_traj,
     long int maxtraj, int maxit, int minit)
   {
     // Initialisation
@@ -20,8 +20,8 @@ void trajectories(
     // ntraj is the nuber of trajectories.
     // it is the number of iteration for a trajectory.
     long int ntraj = 0, it = 0;
-    int max_acumul = 0;
-    int ij[maxit*2], i, j;
+    unsigned int max_acumul = 0;
+    unsigned int ij[maxit*2], i, j;
     char diverge=0;
 
     dx = (x_b[1]-x_b[0]) / (nx-1);
@@ -56,10 +56,10 @@ void trajectories(
             ntraj++;
             for ( i=0; i<it-1; i+=2 )
               {
-                M_traj[ij[i]][ij[i+1]] += 1;
-                if (M_traj[ij[i]][ij[i+1]]>max_acumul)
+                *(M_traj+nx*ij[i]+ij[i+1]) += 1;
+                if ( *(M_traj+nx*ij[i]+ij[i+1]) > max_acumul)
                   {
-                    max_acumul = M_traj[ij[i]][ij[i+1]] ;
+                    max_acumul = *(M_traj+nx*ij[i]+ij[i+1]) ;
                   }
               }
           }
@@ -78,6 +78,9 @@ int *zeros(int l, int m)
   {
     int *arr;
     arr = malloc(l*m*sizeof(int));
+    if (arr==NULL){
+        printf("\n ERROR No space allocated \n");
+    }
     unsigned int i, j;
 
     for (i=0; i<l; i++)

@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 size = np.fromfile('arraysize', dtype=np.intc)
-data = np.fromfile('array', dtype=np.ubyte)
+data = np.fromfile('array', dtype=np.intc)
 print(data.shape)
 data.shape = (size[0], size[1])
 data += data[::-1, :]
