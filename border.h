@@ -56,8 +56,8 @@ void trajectories(
     dx = (x_b[1]-x_b[0]) / (nx-1);
     while ( ntraj < maxtraj )
       {
-        y0 = M_brdr[(2*itraj)%Nborder]*dx+gaussrand(dx);
-        x0 = x_b[0]+M_brdr[(2*itraj+1)%Nborder]*dx+gaussrand(dx);
+        y0 = M_brdr[(2*itraj)%Nborder]*dx+gaussrand(4*dx);
+        x0 = x_b[0]+M_brdr[(2*itraj+1)%Nborder]*dx+gaussrand(4*dx);
 
         it = 0;
         x = x0;
@@ -96,7 +96,7 @@ void trajectories(
                 diverge = 1;
               }
           }
-        if (diverge == 1 && it>=minit)
+        if (diverge == 1 && it>minit)
           {
             ntraj++;
             for ( i=0; i<it; i+=2 )
@@ -106,7 +106,7 @@ void trajectories(
             if (ntraj % 10000 == 0)
               {
                 printf("\e[?25l");
-                printf("\rPoints computed by core 0 (x 1000) : %-6ld/%6ld   ", ntraj/1000, maxtraj/1000 );
+                printf("\rPoints computed by core 0 (x 1000) : %-6ld/%6ld", ntraj/1000, maxtraj/1000 );
                 fflush(stdout);
               }
           }
@@ -128,7 +128,7 @@ void border(float x_b[],
     double dx, x, y, x0, y0, x2, y2, q;
     unsigned int ny, it=0, i, j;
     unsigned int k=0;
-    unsigned char mindepth = depth*0.6;
+    unsigned char mindepth = depth*0.4;
     dx = (x_b[1]-x_b[0]) / (nx-1);
     ny = 1+y_b/dx;
 
@@ -173,7 +173,21 @@ void border(float x_b[],
       }
     if (k*2>=*Npts)
       {
-        printf("\nWarning : Not enough space allocated to store all the border points, change the parameters. \n");
+        printf("\nWarning : Not enough space allocated to store all the border points, \n");
+        printf("set parameter Npts larger.\n");
       }
     *Npts = 2*k;
+  }
+
+void save(char fname[], void *data, unsigned int size)
+  {
+    FILE *fp;
+    fp = fopen(fname, "w+");
+    if(fp == NULL)
+    {
+        printf("Error opening file %s, cannot save.\n", fname);
+        exit(1);
+    }
+    fwrite(data, size, 1, fp);
+    fclose(fp);
   }
