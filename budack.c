@@ -86,6 +86,7 @@ int main()
         }
         fwrite(arraysize, sizeof(arraysize), 1, fp);
         printf("Written trajectories.o on disk. \n  \n");
+        printf("\e[?25h");
         }
     /* free(M); */
     /* free(M_sum); */

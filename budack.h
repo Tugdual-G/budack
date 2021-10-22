@@ -4,6 +4,27 @@
 #include <mpi.h>
 #include <math.h>
 
+
+#define PI 3.141592654
+
+double gaussrand(double dx)
+{
+  static double U, V;
+  static int phase = 0;
+  double Z;
+
+  if(phase == 0) {
+    U = (rand() + 1.) / (RAND_MAX + 2.);
+    V = rand() / (RAND_MAX + 1.);
+    Z = sqrt(-2 * log(U)) * sin(2 * PI * V);
+  } else
+    Z = sqrt(-2 * log(U)) * cos(2 * PI * V);
+
+  phase = 1 - phase;
+
+  return Z*dx*2;
+}
+
 double randomfloat(double min, double max)
   {
     double r, range=max-min;
@@ -13,9 +34,16 @@ double randomfloat(double min, double max)
   }
 
 void trajectories(
-    unsigned int nx, unsigned int ny, double x_b[2],
-    double y_b[2], int *M_traj,
-    long int maxtraj, int maxit, int minit)
+    unsigned int nx,
+    unsigned int ny,
+    float x_b[2],
+    float y_b[2],
+    int *M_traj,
+    long int maxtraj,
+    int maxit,
+    int minit,
+    unsigned int *M_border,
+    unsigned int Npts)
   {
     // Initialisation
     double dx, x, y, x0, y0, x2, y2;
@@ -32,8 +60,8 @@ void trajectories(
     dx = (x_b[1]-x_b[0]) / (nx-1);
     while ( ntraj < maxtraj )
       {
-        x0 = randomfloat(x_b[0],x_b[1]);
-        y0 = randomfloat(0, y_b[1]);
+        x0 = M_border[(2*it)%Npts]+gaussrand(dx);
+        y0 = M_border[(2*it+1)%Npts]+gaussrand(dx);
 
         it = 0;
         x = x0;
@@ -86,19 +114,11 @@ void trajectories(
               }
           }
       }
-    printf("\e[?25h");
-    /* for (i=0; i<ny; i++) */
-    /*   { */
-    /*     for (j=0; j<nx; j++) */
-    /*       { */
-    /*         M_traj[i][j] = M_traj[i][j]/4; */
-    /*       } */
-    /*   } */
   }
 
-int *zeros(int l, int m)
+unsigned int *zeros(unsigned int l, unsigned int m)
   {
-    int *arr;
+    unsigned int *arr;
     arr = malloc(l*m*sizeof(int));
     if (arr==NULL){
         printf("\n ERROR No space allocated for the trajectories array\n");
