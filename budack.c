@@ -4,6 +4,7 @@
 #include "budack.h"
 #include <mpi.h>
 
+
 const int e6 = 1000000;
 const int e3 = 1000;
 

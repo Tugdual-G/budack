@@ -4,6 +4,7 @@
 #include <math.h>
 #include <mpi.h>
 
+
 #define PI 3.141592654
 
 double gaussrand(double dx)
