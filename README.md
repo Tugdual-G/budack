@@ -3,7 +3,9 @@ Generate beautifuls figures based on the Mandelbrot fractal via parallel cumputi
 ![alt text](trajhd.png)
 The trajectories are written on disk in 8 bits grayscale: 'trajectories.char'
 
-Run with 'mpiexec ./budack' to compute and save the trajectories.
+Run with mpiexec to compute and save the trajectories.
+
+        mpiexec ./budack
 
 You can generate the image using imagemagick for exemple, for a grid of 1000x833: 
 
