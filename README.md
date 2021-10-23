@@ -3,7 +3,7 @@ Generate beautiful figures based on the Mandelbrot fractal via parallel computin
 
 (click on the picture to see the rich details)
 ![alt text](trajhd.png)
-The trajectories are written on disk in 8 bits grayscale: 'trajectories.char'
+The trajectories are written on disk in 8 bits grayscale: 'trajectories.char' . This format can be easily changed to higher quality.
 
 Run with mpiexec to compute and save the trajectories.
 
