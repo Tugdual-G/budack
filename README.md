@@ -11,4 +11,4 @@ You can generate the image using imagemagick for exemple, for a grid of 1000x833
 
 Computing scheme :
 
-        Generate random points close to the border of the Mandelbrot set; then compute their trajectories.
+Generate random points close to the border of the Mandelbrot set, then compute their trajectories.
