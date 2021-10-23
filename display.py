@@ -19,6 +19,6 @@ data += data[::-1, :]
 plt.imshow(data[8:-8, 8:-8], cmap='inferno')
 plt.axis("image")
 plt.axis("off")
-plt.savefig("budac.png", bbox_inches='tight', dpi=600)
+plt.savefig("budac.png", bbox_inches='tight', dpi=300)
 plt.scatter(x, y, c='r', marker='.', s=0.1)
 plt.show()
