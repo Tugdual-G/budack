@@ -20,9 +20,6 @@ struct Param
     unsigned int *B_sum;
     unsigned int *M;
     unsigned int *M_brdr;
-    /* char B_sum_nm[]; */
-    /* char M_nm[]; */
-    /* char M_brdr_nm[]; */
 };
 
 
@@ -37,13 +34,13 @@ int main()
     ////////////////////////////////////////////////
     //   Most important parameters
     ////////////////////////////////////////////////
-    long int N = 10*e6;
-    unsigned int nx= 1*e3;
-    unsigned int maxit = 20;
+    long int N = 80*e6;
+    unsigned int nx= 9*e3;
+    unsigned int maxit = 3000;
     ////////////////////////////////////////////////
 
 
-    unsigned int minit = 1;
+    unsigned int minit = 300;
     unsigned int ny = 0;
     float a[2]={-2.3, 1.3}, b[2]={-1.5,1.5}, dx;
 
