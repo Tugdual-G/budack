@@ -1,7 +1,8 @@
 # budack
 Generate beautiful figures based on the Mandelbrot fractal via parallel computing. 
 
-(click on the picture to see the rich details)
+([click to explore the rich details of the picture below](https://raw.githubusercontent.com/Tugdual-G/budack/main/trajhd.png))
+
 ![alt text](trajhd.png)
 The trajectories are written on disk in 8 bits grayscale: 'trajectories.char' . This format can be easily changed to higher quality.
 
