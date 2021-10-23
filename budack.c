@@ -39,21 +39,22 @@ int main()
     ////////////////////////////////////////////////
     long int N = 1*e6;
     unsigned int nx= 1*e3;
-    unsigned int maxit = 1000;
+    unsigned int maxit = 2000;
     ////////////////////////////////////////////////
 
 
-    unsigned int minit = 5;
+    unsigned int minit = 8;
     unsigned int ny = 0;
     float a[2]={-2.3, 1.3}, b[2]={-1.5,1.5}, dx;
 
-    printf("\e[?25l");
-    dx = (a[1]-a[0]) / (nx-1);
-    ny = 1+(b[1]-b[0])/dx;
+    // x and y are discretized at the midle of the cells
+    dx = (a[1]-a[0]) / nx;
+    ny = 2*b[1]/dx;
 
     if (rank==0){
         printf("\nnx = %d ; ny = %d ; ny*nx= %d \n", nx, ny, ny*nx);
         printf("maxit = %d ; minit = %d \n", maxit, minit);
+        printf("Depth of the data written to disk : %lu \n \n", sizeof(unsigned int));
         printf("Computing %ld trajectories\n", N);
         printf("Begin computation on %d cores \n", world_size);
     }
@@ -67,7 +68,7 @@ int main()
 
     unsigned int *M, *M_brdr;
     unsigned int Nborder=nx*ny/20;
-    unsigned char depth = 40;
+    unsigned char depth = 90;
 
     M_brdr = (unsigned int *)calloc(Nborder, sizeof(unsigned int));
     M = (unsigned int *)calloc((int)nx*ny/2, sizeof(unsigned int));
@@ -102,13 +103,15 @@ int main()
     MPI_Reduce(B, B_sum, nx*ny, MPI_INT, MPI_SUM, 0,
         MPI_COMM_WORLD);
 
+
+
+
     int arraysize[2]={ny, nx};
     if (rank==0)
         {
             end = clock();
             t_comp = (float)(end - begin);
             t_comp = t_comp/CLOCKS_PER_SEC;
-            printf("\e[?25h"); // display the cursor again
             printf("\nTime elapsed computing trajectories %f s \n", t_comp);
 
             // Storing variables on disk
@@ -117,18 +120,12 @@ int main()
             save("boundary.data", M_brdr, sizeof(unsigned int)*Nborder);
 
         }
-    //MPI_Barrier(MPI_COMM_WORLD);
-    //free(M);
-    //printf("free M \n");
-    //MPI_Barrier(MPI_COMM_WORLD);
-    ////free(M_brdr);  // WTF is that bug !!!
-    //printf("free M_brdr \n");
-    //MPI_Barrier(MPI_COMM_WORLD);
-    //free(B);
-    //printf("free B \n");
-    //MPI_Barrier(MPI_COMM_WORLD);
-    //free(B_sum);
-    //printf("free B_sum \n");
+
+    free(M);
+    free(M_brdr);
+    free(B);
+    free(B_sum);
+    printf("allocated space freed \n");
     MPI_Finalize(); // finish MPI environment
     return 0;
 }

@@ -57,11 +57,11 @@ void trajectories(
     char diverge=0;
     double q;
 
-    dx = (x_b[1]-x_b[0]) / (nx-1);
+    dx = (x_b[1]-x_b[0]) / nx;
     while ( ntraj < maxtraj )
       {
-        y0 = M_brdr[(2*itraj)%Nborder]*dx+gaussrand(4*dx);
-        x0 = x_b[0]+M_brdr[(2*itraj+1)%Nborder]*dx+gaussrand(4*dx);
+        y0 = (1/2+M_brdr[(2*itraj)%Nborder])*dx+gaussrand(4*dx);
+        x0 = x_b[0]+(1/2+M_brdr[(2*itraj+1)%Nborder])*dx+gaussrand(4*dx);
 
         it = 0;
         x = x0;
@@ -109,7 +109,6 @@ void trajectories(
               }
             if (rank==0 && ntraj % 10000 == 0)
               {
-                printf("\e[?25l");
                 printf("\rPoints computed by core 0 (x 1000) : %-6ld/%6ld", ntraj/1000, maxtraj/1000 );
                 fflush(stdout);
               }
@@ -133,8 +132,8 @@ void border(float x_b[],
     unsigned int ny, it=0, i, j;
     unsigned int k=0;
     unsigned char mindepth = depth*0.4;
-    dx = (x_b[1]-x_b[0]) / (nx-1);
-    ny = 1+y_b/dx;
+    dx = (x_b[1]-x_b[0]) / nx;
+    ny = y_b/dx;
 
     for (i=0;i<ny; i++)
       {
@@ -145,8 +144,8 @@ void border(float x_b[],
             y = 0;
             x2 = 0;
             y2 = 0;
-            x0 = x_b[0]+j*dx;
-            y0 = i*dx;
+            x0 = x_b[0]+(1/2+j)*dx;
+            y0 = (1/2+i)*dx;
 
             /* Here we test if the point is obviously in the set */
             /* i.e. main cardioid and disk */
