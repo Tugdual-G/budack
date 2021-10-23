@@ -1,4 +1,4 @@
-# budac
+# budack
 Generate beautiful figures based on the Mandelbrot fractal via parallel computing.
 ![alt text](trajhd.png)
 The trajectories are written on disk in 8 bits grayscale: 'trajectories.char'
