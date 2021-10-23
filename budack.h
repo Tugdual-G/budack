@@ -131,7 +131,7 @@ void border(float x_b[],
     double dx, x, y, x0, y0, x2, y2, q;
     unsigned int ny, it=0, i, j;
     unsigned int k=0;
-    unsigned char mindepth = depth*0.4;
+    unsigned char mindepth = depth*0.3;
     dx = (x_b[1]-x_b[0]) / nx;
     ny = y_b/dx;
 
@@ -193,4 +193,55 @@ void save(char fname[], void *data, unsigned int size)
     }
     fwrite(data, size, 1, fp);
     fclose(fp);
+  }
+
+void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B)
+  {
+    unsigned long k;
+    unsigned int i, j;
+    unsigned int b;
+
+    for (i=0;i<ny;i++)
+        {
+          for(j=0;j<nx;j++)
+            {
+              k = (unsigned long) ny*nx-(1+i)*nx+j;
+              b = B[i*nx+j];
+              B[i*nx+j] += B[k];
+              B[k] += b;
+            }
+
+        }
+  }
+
+void save_chargrayscale(unsigned int ny, unsigned int nx, unsigned int *B, char fname[])
+  {
+    unsigned long size = nx*ny;
+    unsigned char *B_c;
+    B_c = (unsigned char *) malloc(sizeof(unsigned char)*size);
+
+    unsigned long k;
+    unsigned int bmax=0;
+
+    mirror_traj(ny,nx,B);
+
+    for (k=0; k<size; k++)
+        {
+            if (*(B+k)>bmax)
+                {
+                    bmax = *(B+k);
+                }
+        }
+    printf("Maximum accumulted points %u \n", bmax );
+    for (k=0; k<size; k++)
+        {
+            *(B_c+k) = (double) *(B+k) * 255/bmax ;
+        }
+
+
+    FILE *fptr;
+    fptr = fopen(fname, "w+");
+    fwrite(B_c, sizeof(unsigned char), size, fptr);
+    fclose(fptr);
+    free(B_c);
   }

@@ -3,6 +3,7 @@
 *.log
 tmp/
 budac.png
+traj.png
 *.py[cod]
 *.egg
 *.npy

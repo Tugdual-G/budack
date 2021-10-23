@@ -37,13 +37,13 @@ int main()
     ////////////////////////////////////////////////
     //   Most important parameters
     ////////////////////////////////////////////////
-    long int N = 1*e6;
+    long int N = 10*e6;
     unsigned int nx= 1*e3;
-    unsigned int maxit = 2000;
+    unsigned int maxit = 20;
     ////////////////////////////////////////////////
 
 
-    unsigned int minit = 8;
+    unsigned int minit = 1;
     unsigned int ny = 0;
     float a[2]={-2.3, 1.3}, b[2]={-1.5,1.5}, dx;
 
@@ -103,10 +103,8 @@ int main()
     MPI_Reduce(B, B_sum, nx*ny, MPI_INT, MPI_SUM, 0,
         MPI_COMM_WORLD);
 
+    unsigned int arraysize[2]={ny, nx};
 
-
-
-    int arraysize[2]={ny, nx};
     if (rank==0)
         {
             end = clock();
@@ -115,17 +113,16 @@ int main()
             printf("\nTime elapsed computing trajectories %f s \n", t_comp);
 
             // Storing variables on disk
-            save("trajectories.data", B_sum, sizeof(unsigned int)*nx*ny);
-            save("arraysize.data", arraysize, sizeof(arraysize));
-            save("boundary.data", M_brdr, sizeof(unsigned int)*Nborder);
-
+            save("arraysize.uint", arraysize, sizeof(arraysize));
+            save("boundary.uint", M_brdr, sizeof(unsigned int)*Nborder);
+            save_chargrayscale(ny,nx,B_sum,"trajectories.char");
         }
 
     free(M);
     free(M_brdr);
     free(B);
     free(B_sum);
-    printf("allocated space freed \n");
+    if (rank==0){printf("allocated space freed \n");}
     MPI_Finalize(); // finish MPI environment
     return 0;
 }
