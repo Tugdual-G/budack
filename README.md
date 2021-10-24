@@ -14,7 +14,7 @@ You can generate the image using imagemagick for example, for a grid of 1000x833
 
     magick convert -size 1000x833 -depth 8 GRAY:trajectories.char traj.png
 
-Using imagemagick's command-line utilities you can also combine differents trajectories (R.char , G.char , and B.char). For exemple:
+Using imagemagick's command-line utilities you can also combine differents trajectories. For exemple, R.char , G.char , and B.char:
 
     magick convert -size 1000x833 -depth 8 R:R.char G:G.char B:B.char -combine -gamma 1.2 -rotate 90 colors.png 
 
