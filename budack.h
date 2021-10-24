@@ -145,7 +145,7 @@ void border(float x_b[2],
             n = n%k;
             x0 = *(M_brdr+n*2+1)+gaussrand(sigma);
             y0 = *(M_brdr+n*2)+gaussrand(sigma);
-            n++;
+            n+=20;
           }
         x = x0;
         y = y0;
