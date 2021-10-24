@@ -28,6 +28,6 @@ or,
 Computing scheme :
 
 - Generate random points close to the border of the Mandelbrot set.
-    - These points are computed randomly with an 'auto-hint', the values of the first N points attract the probability distribution of the next point toward them. When N is small (N=100) this first part of computation is faster and the generated pictures presents some interesting random nuances.  
+    - These points are computed randomly with an 'auto-hint', the values of the first N points attract the probability distribution of the next point toward them. When N is small (N=100) this first part of computation is faster and the generated pictures presents some interesting random nuances.  
 - Slightly offset these points by a binomial distribution.
 - Compute their trajectories.
