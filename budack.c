@@ -62,7 +62,7 @@ int main()
     //   Searching for points on the boundary
     ////////////////////////////////////////////////
 
-    // TODO parallelise this part
+    // There is no need to parallelise this part
 
     clock_t begin = clock();
 
@@ -116,7 +116,7 @@ int main()
             // Storing variables on disk
             save("trajectories_data/arraysize.uint", arraysize, sizeof(arraysize));
             save("trajectories_data/boundary.uint", M_brdr, sizeof(double)*Nborder);
-            save_chargrayscale(ny,nx,B_sum,"trajectories_data/B.char");
+            save_chargrayscale(ny,nx,B_sum,"trajectories_data/trajectories.char");
         }
 
     MPI_Barrier(MPI_COMM_WORLD);
