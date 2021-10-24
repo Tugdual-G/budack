@@ -25,6 +25,5 @@ Which gives:
 Computing scheme :
 
 - Generate random points close to the border of the Mandelbrot set.
-(Stored as index coordinates (i, j) to save space and reading time)
-- Offset these points randomly by a binomial distribution
-- Compute their trajectories
+- Offset these points randomly by a binomial distribution.
+- Compute their trajectories.
