@@ -3,7 +3,7 @@ Generate beautiful figures based on the Mandelbrot fractal via parallel computin
 
 ([click to explore the rich details of the picture below](https://raw.githubusercontent.com/Tugdual-G/budack/main/trajhd.png))
 
-![alt text](trajhd.png)
+![alt text](trajectories/trajhd.png)
 
 Run with mpiexec to compute and save the trajectories.
 
@@ -19,7 +19,7 @@ Using imagemagick's command-line utilities you can also combine differents traje
     magick convert -size 1000x833 -depth 8 R:R.char G:G.char B:B.char -combine -gamma 1.2 -rotate 90 colors.png 
 
 Which gives:
-![alt text](colors.png)
+![alt text](trajectories/colors.png)
 
 
 Computing scheme :
