@@ -42,7 +42,7 @@ void trajectories(
     long int maxtraj,
     int maxit,
     int minit,
-    unsigned int *M_brdr,
+    double *M_brdr,
     unsigned int Nborder)
   {
     // Initialisation
@@ -60,8 +60,10 @@ void trajectories(
     dx = (x_b[1]-x_b[0]) / nx;
     while ( ntraj < maxtraj )
       {
-        y0 = (1/2+M_brdr[(2*itraj)%Nborder])*dx+gaussrand(5*dx);
-        x0 = x_b[0]+(1/2+M_brdr[(2*itraj+1)%Nborder])*dx+gaussrand(5*dx);
+        /* y0 = M_brdr[(2*itraj)%Nborder]+gaussrand(5*dx); */
+        /* x0 = M_brdr[(2*itraj+1)%Nborder]+gaussrand(5*dx); */
+        y0 = gaussrand(1);
+        x0 = gaussrand(1);
 
         it = 0;
         x = x0;
@@ -124,14 +126,14 @@ void border(float x_b[],
             unsigned int nx,
             unsigned int *Npts,
             unsigned int *M,
-            unsigned int *M_brdr)
+            double *M_brdr)
   {
     // Return the list of the points at the boundary in index coordinates
     // relative to the subdomain bodaries.
     double dx, x, y, x0, y0, x2, y2, q;
     unsigned int ny, it=0, i, j;
     unsigned int k=0;
-    unsigned char mindepth = depth*0.4;
+    unsigned char mindepth = depth*0.5;
     dx = (x_b[1]-x_b[0]) / nx;
     ny = y_b/dx;
 
@@ -168,8 +170,8 @@ void border(float x_b[],
               }
             if (it < depth && it >= mindepth && k*2<*Npts)
               {
-                *(M_brdr+k*2)= i;
-                *(M_brdr+k*2+1) = j;
+                *(M_brdr+k*2)= x0;
+                *(M_brdr+k*2+1) = y0;
                 k++;
               }
           }
