@@ -34,18 +34,19 @@ int main()
     ////////////////////////////////////////////////
     //   Most important parameters
     ////////////////////////////////////////////////
-    long int N = 90*e6;
-    unsigned int nx= 2*e3;
-    unsigned int maxit = 20;
-    ////////////////////////////////////////////////
 
+    long int N = 10*e6; // number of starting points
+    unsigned int nx= 1*e3; // Grid size x axis
+    unsigned int maxit = 20; // maximum number of iteration per point
+    unsigned int minit = 0; // minimum iteration per point
+    float a[2]={-2.3, 1.3}, b[2]={-1.5,1.5}; // size of the domain a+bi
 
-    unsigned int minit = 0;
-    unsigned int ny = 0;
-    float a[2]={-2.3, 1.3}, b[2]={-1.5,1.5}, dx;
+    ///////////////////////////////////////////////
+    ///////////////////////////////////////////////
 
     // x and y are discretized at the midle of the cells
-    dx = (a[1]-a[0]) / nx;
+    unsigned int ny = 0;
+    double dx = (a[1]-a[0]) / nx;
     ny = 2*b[1]/dx;
 
     if (rank==0){
@@ -110,9 +111,9 @@ int main()
             printf("\nTime elapsed computing trajectories %f s \n", t_comp);
 
             // Storing variables on disk
-            save("arraysize.uint", arraysize, sizeof(arraysize));
-            save("boundary.uint", M_brdr, sizeof(unsigned int)*Nborder);
-            save_chargrayscale(ny,nx,B_sum,"trajectories.char");
+            save("trajectories/arraysize.uint", arraysize, sizeof(arraysize));
+            save("trajectories/boundary.uint", M_brdr, sizeof(unsigned int)*Nborder);
+            save_chargrayscale(ny,nx,B_sum,"trajectories/trajectories.char");
         }
 
     free(M);
