@@ -37,7 +37,7 @@ int main()
 
     long int N = 10*e6; // number of starting points
     unsigned int nx= 1*e3; // Grid size x axis
-    unsigned int maxit = 20; // maximum number of iteration per point
+    unsigned int maxit = 1000; // maximum number of iteration per point
     unsigned int minit = 0; // minimum iteration per point
     float a[2]={-2.3, 1.3}, b[2]={-1.5,1.5}; // size of the domain a+bi
 
@@ -62,11 +62,13 @@ int main()
     //   Searching for points on the boundary
     ////////////////////////////////////////////////
 
+    // TODO parallelise this part
+
     clock_t begin = clock();
 
     unsigned int *M;
     double *M_brdr;
-    long int Nborder = nx*8;
+    long int Nborder = nx*ny/20;
     unsigned int depth = maxit;
 
 

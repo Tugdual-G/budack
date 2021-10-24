@@ -127,35 +127,46 @@ void border(float x_b[2],
     // Return the list of the points at the boundary in index coordinates
     // relative to the subdomain bodaries.
     double x, y, x0, y0, x2, y2;
-    unsigned int it=0;
-    unsigned int k=0;
+    unsigned int it=0, start=1000;
+    unsigned int k=0, n=0;
     unsigned char mindepth = depth*0.9;
+    float sigma=50/start;
 
     while (2*k<Npts)
       {
-            it = 0;
+        it = 0;
+        if (k<1000)
+          {
             x0 = randomfloat(-2, 1/2);
             y0 = randomfloat(0, 1);
-            x = x0;
-            y = y0;
+          }
+        else
+          {
+            n = n%k;
+            x0 = *(M_brdr+n*2+1)+gaussrand(sigma);
+            y0 = *(M_brdr+n*2)+gaussrand(sigma);
+            n++;
+          }
+        x = x0;
+        y = y0;
+        x2 = x*x;
+        y2 = y*y;
+
+        while ( it < depth && x2+y2 < 4)
+          {
+            // Storing the trajectories
+            y = 2 * x * y + y0;
+            x = x2 - y2 + x0;
             x2 = x*x;
             y2 = y*y;
-
-            while ( it < depth && x2+y2 < 4)
-              {
-                // Storing the trajectories
-                y = 2 * x * y + y0;
-                x = x2 - y2 + x0;
-                x2 = x*x;
-                y2 = y*y;
-                it++;
-              }
-            if (it < depth && it >= mindepth)
-              {
-                *(M_brdr+k*2)= y0;
-                *(M_brdr+k*2+1) = x0;
-                k++;
-              }
+            it++;
+          }
+        if (it < depth && it >= mindepth)
+          {
+            *(M_brdr+k*2)= y0;
+            *(M_brdr+k*2+1) = x0;
+            k++;
+          }
       }
   }
 
