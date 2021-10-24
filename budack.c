@@ -111,9 +111,9 @@ int main()
             printf("\nTime elapsed computing trajectories %f s \n", t_comp);
 
             // Storing variables on disk
-            save("trajectories/arraysize.uint", arraysize, sizeof(arraysize));
-            save("trajectories/boundary.uint", M_brdr, sizeof(unsigned int)*Nborder);
-            save_chargrayscale(ny,nx,B_sum,"trajectories/trajectories.char");
+            save("trajectories_data/arraysize.uint", arraysize, sizeof(arraysize));
+            save("trajectories_data/boundary.uint", M_brdr, sizeof(unsigned int)*Nborder);
+            save_chargrayscale(ny,nx,B_sum,"trajectories_data/trajectories.char");
         }
 
     free(M);
