@@ -34,13 +34,13 @@ int main()
     ////////////////////////////////////////////////
     //   Most important parameters
     ////////////////////////////////////////////////
-    long int N = 80*e6;
-    unsigned int nx= 9*e3;
-    unsigned int maxit = 3000;
+    long int N = 90*e6;
+    unsigned int nx= 2*e3;
+    unsigned int maxit = 20;
     ////////////////////////////////////////////////
 
 
-    unsigned int minit = 300;
+    unsigned int minit = 0;
     unsigned int ny = 0;
     float a[2]={-2.3, 1.3}, b[2]={-1.5,1.5}, dx;
 

@@ -131,7 +131,7 @@ void border(float x_b[],
     double dx, x, y, x0, y0, x2, y2, q;
     unsigned int ny, it=0, i, j;
     unsigned int k=0;
-    unsigned char mindepth = depth*0.3;
+    unsigned char mindepth = depth*0.4;
     dx = (x_b[1]-x_b[0]) / nx;
     ny = y_b/dx;
 
