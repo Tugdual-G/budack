@@ -42,7 +42,7 @@ void trajectories(
     long int maxtraj,
     int maxit,
     int minit,
-    unsigned int *M_brdr,
+    double *M_brdr,
     unsigned int Nborder)
   {
     // Initialisation
@@ -55,13 +55,12 @@ void trajectories(
     long int ntraj = 0, it = 0, itraj=0;
     unsigned int ij[maxit*2+1], i;
     char diverge=0;
-    double q;
 
     dx = (x_b[1]-x_b[0]) / nx;
     while ( ntraj < maxtraj )
       {
-        y0 = (1/2+M_brdr[(2*itraj)%Nborder])*dx+gaussrand(5*dx);
-        x0 = x_b[0]+(1/2+M_brdr[(2*itraj+1)%Nborder])*dx+gaussrand(5*dx);
+        y0 = M_brdr[(2*itraj)%Nborder]+gaussrand(5*dx);
+        x0 = M_brdr[(2*itraj+1)%Nborder]+gaussrand(5*dx);
 
         it = 0;
         x = x0;
@@ -70,14 +69,14 @@ void trajectories(
         y2 = y*y;
         diverge = 0;
 
-        // Here we test if the point is obviously in the set
-        // i.e. main cardioid and disk
-        q = (x-1/4)*(x-1/4)+y2;
-        if (q*(q+(x-1/4))<y2/5 || (x+1)*(x+1)+y2<1/17){
-          // If the point is in the set we do not iterate
-          // and we search for another
-          it = maxit;
-        }
+        /* // Here we test if the point is obviously in the set */
+        /* // i.e. main cardioid and disk */
+        /* q = (x-1/4)*(x-1/4)+y2; */
+        /* if (q*(q+(x-1/4))<y2/5 || (x+1)*(x+1)+y2<1/17){ */
+        /*   // If the point is in the set we do not iterate */
+        /*   // and we search for another */
+        /*   it = maxit; */
+        /* } */
         ij[it*2] = (y-y_b[0])/dx;
         ij[it*2+1] = (x-x_b[0])/dx;
 
@@ -118,43 +117,29 @@ void trajectories(
   }
 
 
-void border(float x_b[],
+void border(float x_b[2],
             float y_b,
-            unsigned char depth,
-            unsigned int nx,
-            unsigned int *Npts,
+            unsigned int depth,
+            long int Npts,
             unsigned int *M,
-            unsigned int *M_brdr)
+            double *M_brdr)
   {
     // Return the list of the points at the boundary in index coordinates
     // relative to the subdomain bodaries.
-    double dx, x, y, x0, y0, x2, y2, q;
-    unsigned int ny, it=0, i, j;
+    double x, y, x0, y0, x2, y2;
+    unsigned int it=0;
     unsigned int k=0;
-    unsigned char mindepth = depth*0.4;
-    dx = (x_b[1]-x_b[0]) / nx;
-    ny = y_b/dx;
+    unsigned char mindepth = depth*0.9;
 
-    for (i=0;i<ny; i++)
+    while (2*k<Npts)
       {
-        for (j=0; j<nx; j++)
-          {
             it = 0;
-            x = 0;
-            y = 0;
-            x2 = 0;
-            y2 = 0;
-            x0 = x_b[0]+(1/2+j)*dx;
-            y0 = (1/2+i)*dx;
-
-            /* Here we test if the point is obviously in the set */
-            /* i.e. main cardioid and disk */
-            q = (x-1/4)*(x-1/4)+y2;
-            if (q*(q+(x-1/4))<y2/5 || (x+1)*(x+1)+y2<1/17){
-              // If the point is in the set we do not iterate
-              // and we search for another
-              it = depth;
-            }
+            x0 = randomfloat(-2, 1/2);
+            y0 = randomfloat(0, 1);
+            x = x0;
+            y = y0;
+            x2 = x*x;
+            y2 = y*y;
 
             while ( it < depth && x2+y2 < 4)
               {
@@ -163,23 +148,15 @@ void border(float x_b[],
                 x = x2 - y2 + x0;
                 x2 = x*x;
                 y2 = y*y;
-                *(M+i*nx+j) += 1;
                 it++;
               }
-            if (it < depth && it >= mindepth && k*2<*Npts)
+            if (it < depth && it >= mindepth)
               {
-                *(M_brdr+k*2)= i;
-                *(M_brdr+k*2+1) = j;
+                *(M_brdr+k*2)= y0;
+                *(M_brdr+k*2+1) = x0;
                 k++;
               }
-          }
       }
-    if (k*2>=*Npts)
-      {
-        printf("\nWarning : Not enough space allocated to store all the border points, \n");
-        printf("set parameter Npts larger.\n");
-      }
-    *Npts = 2*k;
   }
 
 void save(char fname[], void *data, unsigned int size)

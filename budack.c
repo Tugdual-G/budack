@@ -19,7 +19,7 @@ struct Param
     unsigned int *B;
     unsigned int *B_sum;
     unsigned int *M;
-    unsigned int *M_brdr;
+    double *M_brdr;
 };
 
 
@@ -64,15 +64,17 @@ int main()
 
     clock_t begin = clock();
 
-    unsigned int *M, *M_brdr;
-    unsigned int Nborder=nx*ny/20;
-    unsigned char depth = 90;
+    unsigned int *M;
+    double *M_brdr;
+    long int Nborder = nx*8;
+    unsigned int depth = maxit;
 
-    M_brdr = (unsigned int *)calloc(Nborder, sizeof(unsigned int));
+
+    M_brdr = (double *)calloc(Nborder, sizeof(double));
     M = (unsigned int *)calloc((int)nx*ny/2, sizeof(unsigned int));
     if (M==NULL){printf("Error, no memory space allocated for computing"); return 0;}
 
-    border(a, b[1], depth, nx, &Nborder, M, M_brdr);
+    border(a, b[1], depth, Nborder, M, M_brdr);
 
     clock_t end = clock();
     float t_comp = (float)(end - begin);
@@ -80,7 +82,7 @@ int main()
     if (rank==0)
         {
             printf("Time elapsed searching for border points %f s \n", t_comp);
-            printf("Core 0 found %u border points \n", Nborder);
+            printf("Core 0 found %ld border points \n", Nborder);
         }
 
     ////////////////////////////////////////////////
@@ -112,10 +114,11 @@ int main()
 
             // Storing variables on disk
             save("trajectories_data/arraysize.uint", arraysize, sizeof(arraysize));
-            save("trajectories_data/boundary.uint", M_brdr, sizeof(unsigned int)*Nborder);
+            save("trajectories_data/boundary.uint", M_brdr, sizeof(double)*Nborder);
             save_chargrayscale(ny,nx,B_sum,"trajectories_data/trajectories.char");
         }
 
+    MPI_Barrier(MPI_COMM_WORLD);
     free(M);
     free(M_brdr);
     free(B);
