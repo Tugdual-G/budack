@@ -127,7 +127,7 @@ void border(float x_b[2],
     // Return the list of the points at the boundary in index coordinates
     // relative to the subdomain bodaries.
     double x, y, x0, y0, x2, y2;
-    unsigned int it=0, start=1000;
+    unsigned int it=0, start=100;
     unsigned int k=0, n=0;
     unsigned char mindepth = depth*0.9;
     float sigma=50/start;
@@ -135,10 +135,10 @@ void border(float x_b[2],
     while (2*k<Npts)
       {
         it = 0;
-        if (k<1000)
+        if (k<start)
           {
-            x0 = randomfloat(-2, 1/2);
-            y0 = randomfloat(0, 1);
+            x0 = randomfloat(-2, 1);
+            y0 = randomfloat(0, 1.5);
           }
         else
           {

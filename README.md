@@ -20,7 +20,8 @@ Using imagemagick's command-line utilities, you can also combine differents traj
 
 Which gives:
 ![alt text](trajectories_data/colors.png)
-
+or,
+![alt text](trajectories_data/colors1.png)
 
 Computing scheme :
 

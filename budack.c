@@ -37,7 +37,7 @@ int main()
 
     long int N = 10*e6; // number of starting points
     unsigned int nx= 1*e3; // Grid size x axis
-    unsigned int maxit = 1000; // maximum number of iteration per point
+    unsigned int maxit = 100; // maximum number of iteration per point
     unsigned int minit = 0; // minimum iteration per point
     float a[2]={-2.3, 1.3}, b[2]={-1.5,1.5}; // size of the domain a+bi
 
@@ -83,8 +83,7 @@ int main()
     t_comp = t_comp/CLOCKS_PER_SEC;
     if (rank==0)
         {
-            printf("Time elapsed searching for border points %f s \n", t_comp);
-            printf("Core 0 found %ld border points \n", Nborder);
+            printf("Core 0 found %ld border points in %f s\n\n", Nborder, t_comp);
         }
 
     ////////////////////////////////////////////////
@@ -117,7 +116,7 @@ int main()
             // Storing variables on disk
             save("trajectories_data/arraysize.uint", arraysize, sizeof(arraysize));
             save("trajectories_data/boundary.uint", M_brdr, sizeof(double)*Nborder);
-            save_chargrayscale(ny,nx,B_sum,"trajectories_data/trajectories.char");
+            save_chargrayscale(ny,nx,B_sum,"trajectories_data/B.char");
         }
 
     MPI_Barrier(MPI_COMM_WORLD);
