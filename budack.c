@@ -7,6 +7,7 @@
 
 const int e6 = 1000000;
 const int e3 = 1000;
+const unsigned int A = 6;
 
 struct Param
 {
@@ -35,19 +36,19 @@ int main()
     //   Most important parameters
     ////////////////////////////////////////////////
 
-    long int N = 10*e6; // number of starting points
-    unsigned int nx= 1*e3; // Grid size x axis
+    unsigned int nx= 2*e3; // Grid size x axis
     unsigned int maxit = 100; // maximum number of iteration per point
     unsigned int minit = 0; // minimum iteration per point
+    float D = 60; // density of point per grid cell (pixel)
     float a[2]={-2.3, 1.3}, b[2]={-1.5,1.5}; // size of the domain a+bi
 
     ///////////////////////////////////////////////
     ///////////////////////////////////////////////
 
     // x and y are discretized at the midle of the cells
-    unsigned int ny = 0;
     double dx = (a[1]-a[0]) / nx;
-    ny = 2*b[1]/dx;
+    unsigned int ny = 2*b[1]/dx;
+    long int N = D*nx*ny*2/(maxit+minit); // N: number of starting points
 
     if (rank==0){
         printf("\nnx = %d ; ny = %d ; ny*nx= %d \n", nx, ny, ny*nx);
@@ -116,7 +117,7 @@ int main()
             // Storing variables on disk
             save("trajectories_data/arraysize.uint", arraysize, sizeof(arraysize));
             save("trajectories_data/boundary.uint", M_brdr, sizeof(double)*Nborder);
-            save_chargrayscale(ny,nx,B_sum,"trajectories_data/trajectories.char");
+            save_chargrayscale(ny,nx,B_sum,"trajectories_data/b.char");
         }
 
     MPI_Barrier(MPI_COMM_WORLD);

@@ -138,7 +138,7 @@ void border(float x_b[2],
         if (k<start)
           {
             x0 = randomfloat(-2, 1);
-            y0 = randomfloat(0, 1.5);
+            y0 = randomfloat(-1.5, 1.5);
           }
         else
           {
