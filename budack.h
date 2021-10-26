@@ -6,6 +6,7 @@
 
 
 #define PI 3.141592654
+const long int A=9;
 
 double gaussrand(double dx)
 {
@@ -39,7 +40,7 @@ void trajectories(
     float x_b[2],
     float y_b[2],
     unsigned int *M_traj,
-    long int maxtraj,
+    long int D,
     int maxit,
     int minit,
     double *M_brdr,
@@ -58,7 +59,7 @@ void trajectories(
     long int mean_it_per_point=0;
 
     dx = (x_b[1]-x_b[0]) / nx;
-    while ( ntraj < maxtraj )
+    while (((long int)ntraj/A) < (long int)D )
       {
         y0 = M_brdr[(2*itraj)%Nborder]+gaussrand(5*dx);
         x0 = M_brdr[(2*itraj+1)%Nborder]+gaussrand(5*dx);
@@ -108,18 +109,13 @@ void trajectories(
               {
                 *(M_traj+nx*ij[i]+ij[i+1]) += 1;
               }
-            if (rank==0 && ntraj % 10000 == 0)
+            if (rank==0 && ntraj % 100000 == 0)
               {
-                printf("\rPoints computed by core 0 (x 1000) : %-6ld/%6ld", ntraj/1000, maxtraj/1000 );
+                printf("\rDensity of point %-5ld/%5ld (core 0)", (long int) ntraj/(100*A), D/100 );
                 fflush(stdout);
               }
           }
         itraj++;
-      }
-    if (rank==0)
-      {
-        mean_it_per_point = mean_it_per_point/maxtraj;
-        printf("\nMean it per starting point : %ld , for maxit = %u , minit = %u \n", mean_it_per_point, maxit, minit);
       }
   }
 
