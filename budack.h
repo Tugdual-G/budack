@@ -55,6 +55,7 @@ void trajectories(
     long int ntraj = 0, it = 0, itraj=0;
     unsigned int ij[maxit*2+1], i;
     char diverge=0;
+    long int mean_it_per_point=0;
 
     dx = (x_b[1]-x_b[0]) / nx;
     while ( ntraj < maxtraj )
@@ -102,6 +103,7 @@ void trajectories(
         if (diverge == 1 && it>minit)
           {
             ntraj++;
+            mean_it_per_point += it;
             for ( i=0; i<it; i+=2 )
               {
                 *(M_traj+nx*ij[i]+ij[i+1]) += 1;
@@ -113,6 +115,11 @@ void trajectories(
               }
           }
         itraj++;
+      }
+    if (rank==0)
+      {
+        mean_it_per_point = mean_it_per_point/maxtraj;
+        printf("\nMean it per starting point : %ld , for maxit = %u , minit = %u \n", mean_it_per_point, maxit, minit);
       }
   }
 

@@ -2,12 +2,13 @@
 #include <stdlib.h>
 #include <time.h>
 #include "budack.h"
+#include <math.h>
 #include <mpi.h>
 
 
 const int e6 = 1000000;
 const int e3 = 1000;
-const unsigned int A = 6;
+const unsigned int A = 9;
 
 struct Param
 {
@@ -36,10 +37,10 @@ int main()
     //   Most important parameters
     ////////////////////////////////////////////////
 
-    unsigned int nx= 2*e3; // Grid size x axis
-    unsigned int maxit = 100; // maximum number of iteration per point
+    unsigned int nx= 1*e3; // Grid size x axis
+    unsigned int maxit = 900; // maximum number of iteration per point
     unsigned int minit = 0; // minimum iteration per point
-    float D = 60; // density of point per grid cell (pixel)
+    float D = 8*e6; // density of point per grid cell (pixel)
     float a[2]={-2.3, 1.3}, b[2]={-1.5,1.5}; // size of the domain a+bi
 
     ///////////////////////////////////////////////
@@ -48,7 +49,9 @@ int main()
     // x and y are discretized at the midle of the cells
     double dx = (a[1]-a[0]) / nx;
     unsigned int ny = 2*b[1]/dx;
-    long int N = D*nx*ny*2/(maxit+minit); // N: number of starting points
+    double alpha = 4+pow(10, -3.0)*(maxit-minit);
+    unsigned int mean_it = minit+16*pow(maxit-minit, 1/alpha);
+    long int N = D*A/mean_it; // N: number of starting points
 
     if (rank==0){
         printf("\nnx = %d ; ny = %d ; ny*nx= %d \n", nx, ny, ny*nx);
@@ -113,6 +116,7 @@ int main()
             t_comp = (float)(end - begin);
             t_comp = t_comp/CLOCKS_PER_SEC;
             printf("\nTime elapsed computing trajectories %f s \n", t_comp);
+            printf("\nEstimated mean it per starting point : %u \n", mean_it);
 
             // Storing variables on disk
             save("trajectories_data/arraysize.uint", arraysize, sizeof(arraysize));
