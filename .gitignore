@@ -1,15 +1,9 @@
-.DS_Store
-.idea
-*.log
 tmp/
-.char
-.uint
-budac.png
-traj.png
+*.char
+*.uint
+*.png
 *.py[cod]
 *.egg
 *.npy
-build
-htmlcov
-array
+*.jpg
 
