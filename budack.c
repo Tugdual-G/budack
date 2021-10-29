@@ -9,19 +9,22 @@ const int e6 = 1000000;
 const int e3 = 1000;
 
 struct Param {
-  long int N;
-  unsigned int nx, ny;
-  unsigned int maxit;
-  unsigned int minit;
-  float a[2];
-  float b[2];
-  unsigned int *B;
-  unsigned int *B_sum;
-  unsigned int *M;
-  double *M_brdr;
+  unsigned int *nx, *maxit, *minit,
+      *start; // This is the number of starting points from where to begin
+  long int *D;
 };
 
-int main() {
+void parse(int argc, char *argv[], struct Param *param) {
+  if (argc > 1) {
+    *(*param).nx = atoi(argv[1]);
+    *(*param).maxit = atoi(argv[2]);
+    *(*param).minit = atoi(argv[3]);
+    *(*param).start = atoi(argv[4]);
+    *(*param).D = atoi(argv[5]);
+  }
+}
+
+int main(int argc, char *argv[]) {
   MPI_Init(NULL, NULL); // initialize MPI environment
   int world_size;       // number of processes
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -34,9 +37,16 @@ int main() {
 
   unsigned int nx = 1 * e3; // Grid size x axis
   unsigned int maxit = 200; // maximum number of iteration per point
-  unsigned int minit = 50;  // minimum iteration per point
-  long int D = 500 * e3;    // density of point, higher = less noise
+  unsigned int minit = 0;   // minimum iteration per point
+  long int D = 16; // Points per pixels of interest (i.e. number of points
+                   // independant of the domain size), higher = less noise
   float a[2] = {-2.3, 1.3}, b[2] = {-1.5, 1.5}; // size of the domain a+bi
+  unsigned int start = 500;
+
+  struct Param param = {
+      .nx = &nx, .maxit = &maxit, .minit = &minit, .start = &start, .D = &D};
+
+  parse(argc, argv, &param);
 
   ///////////////////////////////////////////////
   ///////////////////////////////////////////////
@@ -49,8 +59,8 @@ int main() {
 
   if (rank == 0) {
     printf("\nnx = %d ; ny = %d ; ny*nx= %d \n", nx, ny, ny * nx);
-    printf("maxit = %d ; minit = %d ; density of points %.1e\n", maxit, minit,
-           (double)D);
+    printf("maxit = %d ; minit = %d ; Points per pixels %ld\n", maxit, minit,
+           D);
     printf("Depth of the data written to disk : %lu \n \n",
            sizeof(unsigned int));
     printf("Begin computation on %d cores \n", world_size);
@@ -65,17 +75,17 @@ int main() {
 
   clock_t begin = clock();
 
-  double *M_brdr;
   long int Nborder = nx * ny / 20;
   unsigned int depth = maxit;
 
-  M_brdr = (double *)calloc(Nborder, sizeof(double));
+  double *M_brdr = (double *)calloc(Nborder, sizeof(double));
+  unsigned char *M = (unsigned char *)calloc(nx * ny, sizeof(double));
   if (M_brdr == NULL) {
     printf("Error, no memory space allocated for computing");
     return 0;
   }
 
-  border(depth, Nborder, M_brdr);
+  border(depth, Nborder, M_brdr, M, start, a[0], b[0], dx, nx);
 
   clock_t end = clock();
   float t_comp = (float)(end - begin);
@@ -89,11 +99,15 @@ int main() {
   ////////////////////////////////////////////////
 
   srand((unsigned int)time(NULL));
-  unsigned int *B, *B_sum;
-  B = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
-  B_sum = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+  unsigned int *B0, *B1, *B2, *B_sum0, *B_sum1, *B_sum2;
+  B0 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+  B1 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+  B2 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+  B_sum0 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+  B_sum1 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+  B_sum2 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
   D = D / world_size;
-  if (B_sum == NULL) {
+  if (B_sum2 == NULL) {
     printf("Error, no memory space (heap) allocated for storing results");
     return 0;
   }
@@ -102,11 +116,13 @@ int main() {
     begin = clock();
   }
 
-  trajectories(nx, ny, a, b, B, D, maxit, minit, M_brdr, Nborder);
+  trajectories(nx, ny, a, b, B0, B1, B2, D, maxit, minit, M_brdr, Nborder);
 
-  MPI_Reduce(B, B_sum, nx * ny, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(B0, B_sum0, nx * ny, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(B1, B_sum1, nx * ny, MPI_INT, MPI_SUM, 1, MPI_COMM_WORLD);
+  MPI_Reduce(B2, B_sum2, nx * ny, MPI_INT, MPI_SUM, 2, MPI_COMM_WORLD);
 
-  unsigned int arraysize[2] = {ny, nx};
+  // unsigned int arraysize[2] = {ny, nx};
 
   if (rank == 0) {
     end = clock();
@@ -115,15 +131,29 @@ int main() {
     printf("\nTime elapsed computing trajectories %f s \n", t_comp);
 
     // Storing variables on disk
-    save("trajectories_data/arraysize.uint", arraysize, sizeof(arraysize));
-    save("trajectories_data/boundary.uint", M_brdr, sizeof(double) * Nborder);
-    save_chargrayscale(ny, nx, B_sum, "trajectories_data/b.char");
-  }
+    // save("trajectories_data/arraysize.uint", arraysize, sizeof(arraysize));
+    // save("trajectories_data/boundary.uint", M_brdr, sizeof(double) *
+    // Nborder);
+    mirror_traj(ny, nx, B_sum0); // Make the image symetric
+    save_chargrayscale(ny, nx, B_sum0, 1, "trajectories_data/traj0.char");
+    save("trajectories_data/hints.char", M, nx * ny);
 
+  } else if (rank == 1) {
+    mirror_traj(ny, nx, B_sum1); // Make the image symetric
+    save_chargrayscale(ny, nx, B_sum1, 2, "trajectories_data/traj1.char");
+
+  } else if (rank == 2) {
+    mirror_traj(ny, nx, B_sum2); // Make the image symetric
+    save_chargrayscale(ny, nx, B_sum2, 3, "trajectories_data/traj2.char");
+  }
   MPI_Barrier(MPI_COMM_WORLD);
   free(M_brdr);
-  free(B);
-  free(B_sum);
+  free(B0);
+  free(B_sum0);
+  free(B1);
+  free(B_sum1);
+  free(B2);
+  free(B_sum2);
   if (rank == 0) {
     printf("allocated space freed \n");
   }

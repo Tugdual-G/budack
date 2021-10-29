@@ -33,7 +33,8 @@ double randomfloat(double min, double max) {
 }
 
 void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
-                  unsigned int *M_traj, long int D, int maxit, int minit,
+                  unsigned int *M_traj0, unsigned int *M_traj1,
+                  unsigned int *M_traj2, long int D, int maxit, int minit,
                   double *M_brdr, unsigned int Nborder) {
   // Initialisation
   int rank; // the rank of the process
@@ -45,7 +46,9 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
   long int ntraj = 0, it = 0, itraj = 0;
   unsigned int ij[maxit * 2 + 1], i;
   char diverge = 0;
-  long int current_D = 0;
+  float current_D = 0;
+  int maxit0 = minit + (maxit - minit) / 10.0,
+      maxit1 = minit + (maxit - minit) / 100.0;
 
   dx = (x_b[1] - x_b[0]) / nx;
   while (current_D < D) {
@@ -86,38 +89,54 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
       }
     }
     if (diverge == 1 && it > minit) {
-      for (i = 0; i < it; i += 2) {
-        *(M_traj + nx * ij[i] + ij[i + 1]) += 1;
+      if (it < maxit0) {
+        for (i = 0; i < it; i += 2) {
+          *(M_traj0 + nx * ij[i] + ij[i + 1]) += 1;
+        }
+      } else if (it < maxit1) {
+        for (i = 0; i < it; i += 2) {
+          *(M_traj1 + nx * ij[i] + ij[i + 1]) += 1;
+        }
+      } else {
+        for (i = 0; i < it; i += 2) {
+          *(M_traj2 + nx * ij[i] + ij[i + 1]) += 1;
+        }
       }
       if (rank == 0 && ntraj % 1000 == 0) {
-        printf("\rDensity of point %-6ld/%6ld (core 0)", current_D, D);
+        printf("\rPoints per pixel %-.4f/%1ld (core 0)", current_D, D);
         fflush(stdout);
       }
       ntraj++;
-      current_D = ntraj / A;
+      current_D = (ntraj * dx * dx) / A;
     }
     itraj++;
   }
   if (rank == 0) {
-    printf("\rDensity of point %-6ld/%6ld (core 0)", current_D, D);
-    fflush(stdout);
+    printf("\rPoints per pixel %-.4f/%1ld (core 0)\n", current_D, D);
   }
 }
 
-void border(unsigned int depth, long int Npts, double *M_brdr) {
+void border(unsigned int depth, long int Npts, double *M_brdr, unsigned char *M,
+            unsigned int start, float a0, float b0, double dx,
+            unsigned int nx) {
   // Return the list of the points at the boundary in index coordinates
   // relative to the subdomain bodaries.
   double x, y, x0, y0, x2, y2;
-  unsigned int it = 0, start = 500;
+  unsigned int it = 0;
   unsigned int k = 0, n = 0;
-  unsigned char mindepth = depth * 0.9;
-  float sigma = 50 / start;
+  unsigned char mindepth = depth * 0.8;
+  float sigma = 0.01;
+  unsigned int i, j;
 
   while (2 * k < Npts) {
     it = 0;
-    if (k < start) {
-      x0 = randomfloat(-2, 1);
-      y0 = randomfloat(-1.5, 1.5);
+
+    if (k < (unsigned int)start / 4) {
+      x0 = randomfloat(-2, -0.75);
+      y0 = randomfloat(0, 0.5);
+    } else if (k > (unsigned int)start / 4 && k < start) {
+      x0 = randomfloat(-0.75, (float)1 / 2);
+      y0 = randomfloat(0, 1.5);
     } else {
       n = n % k;
       x0 = *(M_brdr + n * 2 + 1) + gaussrand(sigma);
@@ -130,7 +149,6 @@ void border(unsigned int depth, long int Npts, double *M_brdr) {
     y2 = y * y;
 
     while (it < depth && x2 + y2 < 4) {
-      // Storing the trajectories
       y = 2 * x * y + y0;
       x = x2 - y2 + x0;
       x2 = x * x;
@@ -140,6 +158,9 @@ void border(unsigned int depth, long int Npts, double *M_brdr) {
     if (it < depth && it >= mindepth) {
       *(M_brdr + k * 2) = y0;
       *(M_brdr + k * 2 + 1) = x0;
+      i = (y0 - b0) / dx;
+      j = (x0 - a0) / dx;
+      *(M + i * nx + j) = 255;
       k++;
     }
   }
@@ -172,7 +193,7 @@ void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B) {
 }
 
 void save_chargrayscale(unsigned int ny, unsigned int nx, unsigned int *B,
-                        char fname[]) {
+                        unsigned char weight, char fname[]) {
   unsigned long size = nx * ny;
   unsigned char *B_c;
   B_c = (unsigned char *)malloc(sizeof(unsigned char) * size);
@@ -180,7 +201,7 @@ void save_chargrayscale(unsigned int ny, unsigned int nx, unsigned int *B,
   unsigned long k;
   unsigned int bmax = 0;
 
-  mirror_traj(ny, nx, B);
+  // mirror_traj(ny, nx, B);
 
   for (k = 0; k < size; k++) {
     if (*(B + k) > bmax) {
@@ -189,7 +210,7 @@ void save_chargrayscale(unsigned int ny, unsigned int nx, unsigned int *B,
   }
   printf("Maximum accumulted points %u \n", bmax);
   for (k = 0; k < size; k++) {
-    *(B_c + k) = (double)*(B + k) * 255 / bmax;
+    *(B_c + k) = (double)*(B + k) * 255 / (weight * bmax);
   }
 
   FILE *fptr;
