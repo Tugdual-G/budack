@@ -56,8 +56,8 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
 
   dx = (x_b[1] - x_b[0]) / nx;
   while (current_D < D) {
-    y0 = M_brdr[(2 * itraj) % Nborder] + gaussrand(5 * dx);
-    x0 = M_brdr[(2 * itraj + 1) % Nborder] + gaussrand(5 * dx);
+    y0 = M_brdr[(2 * itraj) % Nborder] + gaussrand(dx);
+    x0 = M_brdr[(2 * itraj + 1) % Nborder] + gaussrand(dx);
 
     it = 0;
     x = x0;
@@ -147,6 +147,7 @@ void border(unsigned int depth, long int Npts, double *M_brdr, unsigned char *M,
       printf("'hint.double' not found, creating file : \n");
     }
     border_start(depth, M_brdr, M, lenght_brdr, a0, b0, dx, nx);
+    k = lenght_brdr;
     if (rank == 0) {
       fp = fopen("hint.double", "wb");
       fwrite(M_brdr, sizeof(double), 2 * lenght_brdr, fp);
