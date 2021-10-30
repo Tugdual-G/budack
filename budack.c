@@ -75,10 +75,10 @@ int main(int argc, char *argv[]) {
 
   clock_t begin = clock();
 
-  long int Nborder = nx * ny / 20;
+  long int Nborder = nx * ny / 40;
   unsigned int depth = maxit;
 
-  double *M_brdr = (double *)calloc(Nborder, sizeof(double));
+  double *M_brdr = (double *)calloc(2 * Nborder, sizeof(double));
   unsigned char *M = (unsigned char *)calloc(nx * ny, sizeof(double));
   if (M_brdr == NULL) {
     printf("Error, no memory space allocated for computing");
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
   float t_comp = (float)(end - begin);
   t_comp = t_comp / CLOCKS_PER_SEC;
   if (rank == 0) {
-    printf("Core 0 found %ld border points in %f s\n\n", Nborder, t_comp);
+    printf("Core 0 found %ld border points in %f s\n\n", Nborder / 2, t_comp);
   }
 
   ////////////////////////////////////////////////

@@ -6,7 +6,11 @@
 
 #define PI 3.141592654
 const long int A = 9;
-const char load[4] = "\\|/-";
+const unsigned int Lenght_strt = 50000;
+
+void border_start(unsigned int depth, double *M_brdr, unsigned char *M,
+                  unsigned int start, float a0, float b0, double dx,
+                  unsigned int nx);
 
 double gaussrand(double dx) {
   static double U, V;
@@ -49,7 +53,6 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
   float current_D = 0;
   int maxit0 = minit + (maxit - minit) / 100.0,
       maxit1 = minit + (maxit - minit) / 10.0;
-  printf(" %d %d %d \n", maxit0, maxit1, maxit);
 
   dx = (x_b[1] - x_b[0]) / nx;
   while (current_D < D) {
@@ -122,28 +125,44 @@ void border(unsigned int depth, long int Npts, double *M_brdr, unsigned char *M,
             unsigned int nx) {
   // Return the list of the points at the boundary in index coordinates
   // relative to the subdomain bodaries.
+  int rank; // the rank of the process
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  FILE *fp;
   double x, y, x0, y0, x2, y2;
   unsigned int it = 0;
   unsigned int k = 0, n = 0;
   unsigned char mindepth = depth * 0.8;
-  float sigma = 0.01;
+  float sigma = 0.005;
   unsigned int i, j;
+  unsigned int lenght_brdr = Lenght_strt;
+
+  if (Npts <= lenght_brdr * 2) {
+    lenght_brdr = Npts / 2;
+  }
+  start = lenght_brdr;
+
+  fp = fopen("hint.double", "rb");
+  if (fp == NULL) {
+    if (rank == 0) {
+      printf("'hint.double' not found, creating file : \n");
+    }
+    border_start(depth, M_brdr, M, lenght_brdr, a0, b0, dx, nx);
+    if (rank == 0) {
+      fp = fopen("hint.double", "wb");
+      fwrite(M_brdr, sizeof(double), 2 * lenght_brdr, fp);
+      printf(", written border points file \n");
+      fclose(fp);
+    }
+  } else {
+    fread(M_brdr, sizeof(double), 2 * lenght_brdr, fp);
+    fclose(fp);
+  }
 
   while (2 * k < Npts) {
     it = 0;
-
-    if (k < (unsigned int)start / 4) {
-      x0 = randomfloat(-2, -0.75);
-      y0 = randomfloat(0, 0.5);
-    } else if (k < start) {
-      x0 = randomfloat(-0.75, (float)1 / 2);
-      y0 = randomfloat(0, 1.5);
-    } else {
-      n = n % k;
-      x0 = *(M_brdr + n * 2 + 1) + gaussrand(sigma);
-      y0 = *(M_brdr + n * 2) + gaussrand(sigma);
-      n += 20;
-    }
+    n = n % start;
+    x0 = *(M_brdr + n * 2 + 1) + gaussrand(sigma);
+    y0 = *(M_brdr + n * 2) + gaussrand(sigma);
     x = x0;
     y = y0;
     x2 = x * x;
@@ -163,7 +182,68 @@ void border(unsigned int depth, long int Npts, double *M_brdr, unsigned char *M,
       j = (x0 - a0) / dx;
       *(M + i * nx + j) = 255;
       k++;
+      n++;
+      if (rank == 0) {
+        printf("\rGenerating starting point : %u / %ld", k, Npts / 2);
+        fflush(stdout);
+      }
     }
+  }
+  if (rank == 0) {
+    printf("\n");
+  }
+}
+
+void border_start(unsigned int depth, double *M_brdr, unsigned char *M,
+                  unsigned int start, float a0, float b0, double dx,
+                  unsigned int nx) {
+  // Return the list of the points at the boundary in index coordinates
+  // relative to the subdomain bodaries.
+  int rank; // the rank of the process
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  double x, y, x0, y0, x2, y2;
+  unsigned int it = 0;
+  unsigned int k = 0;
+  unsigned char mindepth = depth * 0.8;
+  unsigned int i, j;
+
+  while (k < start) {
+    it = 0;
+
+    x0 = randomfloat(-2, 0.5);
+    if (x0 < -0.75) {
+      y0 = randomfloat(0, 0.5);
+    } else {
+      y0 = randomfloat(0, 1.5);
+    }
+
+    x = x0;
+    y = y0;
+    x2 = x * x;
+    y2 = y * y;
+
+    while (it < depth && x2 + y2 < 4) {
+      y = 2 * x * y + y0;
+      x = x2 - y2 + x0;
+      x2 = x * x;
+      y2 = y * y;
+      it++;
+    }
+    if (it < depth && it >= mindepth) {
+      *(M_brdr + k * 2) = y0;
+      *(M_brdr + k * 2 + 1) = x0;
+      i = (y0 - b0) / dx;
+      j = (x0 - a0) / dx;
+      *(M + i * nx + j) = 255;
+      k++;
+      if (rank == 0) {
+        printf("\rGenerating file : %u / %u", k, start);
+        fflush(stdout);
+      }
+    }
+  }
+  if (rank == 0) {
+    printf("\n");
   }
 }
 
