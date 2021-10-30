@@ -6,4 +6,5 @@ tmp/
 *.egg
 *.npy
 *.jpg
+!trajhd.png
 

@@ -47,8 +47,9 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
   unsigned int ij[maxit * 2 + 1], i;
   char diverge = 0;
   float current_D = 0;
-  int maxit0 = minit + (maxit - minit) / 10.0,
-      maxit1 = minit + (maxit - minit) / 100.0;
+  int maxit0 = minit + (maxit - minit) / 100.0,
+      maxit1 = minit + (maxit - minit) / 10.0;
+  printf(" %d %d %d \n", maxit0, maxit1, maxit);
 
   dx = (x_b[1] - x_b[0]) / nx;
   while (current_D < D) {
@@ -98,6 +99,7 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
           *(M_traj1 + nx * ij[i] + ij[i + 1]) += 1;
         }
       } else {
+        ntraj++;
         for (i = 0; i < it; i += 2) {
           *(M_traj2 + nx * ij[i] + ij[i + 1]) += 1;
         }
@@ -106,7 +108,6 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
         printf("\rPoints per pixel %-.4f/%1ld (core 0)", current_D, D);
         fflush(stdout);
       }
-      ntraj++;
       current_D = (ntraj * dx * dx) / A;
     }
     itraj++;
@@ -134,7 +135,7 @@ void border(unsigned int depth, long int Npts, double *M_brdr, unsigned char *M,
     if (k < (unsigned int)start / 4) {
       x0 = randomfloat(-2, -0.75);
       y0 = randomfloat(0, 0.5);
-    } else if (k > (unsigned int)start / 4 && k < start) {
+    } else if (k < start) {
       x0 = randomfloat(-0.75, (float)1 / 2);
       y0 = randomfloat(0, 1.5);
     } else {
@@ -194,6 +195,7 @@ void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B) {
 
 void save_chargrayscale(unsigned int ny, unsigned int nx, unsigned int *B,
                         unsigned char weight, char fname[]) {
+  int rank = MPI_Comm_rank(MPI_COMM_WORLD, &rank); // the rank of the process
   unsigned long size = nx * ny;
   unsigned char *B_c;
   B_c = (unsigned char *)malloc(sizeof(unsigned char) * size);
@@ -208,7 +210,7 @@ void save_chargrayscale(unsigned int ny, unsigned int nx, unsigned int *B,
       bmax = *(B + k);
     }
   }
-  printf("Maximum accumulted points %u \n", bmax);
+  printf("Maximum accumulted points %u , rank %d \n", bmax, rank);
   for (k = 0; k < size; k++) {
     *(B_c + k) = (double)*(B + k) * 255 / (weight * bmax);
   }

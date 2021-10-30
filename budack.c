@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
     // save("trajectories_data/boundary.uint", M_brdr, sizeof(double) *
     // Nborder);
     mirror_traj(ny, nx, B_sum0); // Make the image symetric
-    save_chargrayscale(ny, nx, B_sum0, 1, "trajectories_data/traj0.char");
+    save_chargrayscale(ny, nx, B_sum0, 3, "trajectories_data/traj0.char");
     save("trajectories_data/hints.char", M, nx * ny);
 
   } else if (rank == 1) {
@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
 
   } else if (rank == 2) {
     mirror_traj(ny, nx, B_sum2); // Make the image symetric
-    save_chargrayscale(ny, nx, B_sum2, 3, "trajectories_data/traj2.char");
+    save_chargrayscale(ny, nx, B_sum2, 1, "trajectories_data/traj2.char");
   }
   MPI_Barrier(MPI_COMM_WORLD);
   free(M_brdr);

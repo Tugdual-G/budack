@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-#
+
 dir=/home/tugdual/Documents/Programmation/C/budac/
 budackc=${dir}budack.c
 budack=${dir}budack
 trajdir=${dir}trajectories_data/
 traj=${trajdir}traj
 imgname=temp
-nx=4000
-startingpts=5000
-density=16
+nx=1000
+startingpts=1000
+density=4
 
 # Image sizes (nx x ny):
 #
@@ -23,8 +23,8 @@ if [ $nx = 8000 ];then ny=6666;fi
 
 #------------- computing  -------------
 mpiexec --mca opal_warn_on_missing_libcuda 0 $budack $nx 800 0 $startingpts $density
-mv ${traj}0.char ${trajdir}r.char
-mv ${traj}1.char ${trajdir}g.char
+# mv ${traj}0.char ${trajdir}r.char
+# mv ${traj}1.char ${trajdir}g.char
 mv ${traj}2.char ${trajdir}b.char
 
 echo --------- Creating gray scale images --------
@@ -36,10 +36,10 @@ magick convert -size ${nx}x${ny} -depth 8 \
      GRAY:${trajdir}hints.char \
       -rotate 90 ${trajdir}${imgname}hints.png
 
-echo --------- Creating colored image --------
-magick convert -size ${nx}x${ny} -depth 8 \
-    gray:${trajdir}r.char gray:${trajdir}g.char gray:${trajdir}b.char \
-    -channel RBG -combine -gamma 1.2 -rotate 90 ${trajdir}${imgname}rgb.png
+# echo --------- Creating colored image --------
+# magick convert -size ${nx}x${ny} -depth 8 \
+#     gray:${trajdir}r.char gray:${trajdir}g.char gray:${trajdir}b.char \
+#     -channel RBG -combine -gamma 1.2 -rotate 90 ${trajdir}${imgname}rgb.png
 
 echo --------- Opening image --------
-sxiv ${trajdir}${imgname}rgb.png ${trajdir}${imgname}hints.png ${trajdir}${imgname}gray.png
+sxiv ${trajdir}${imgname}hints.png ${trajdir}${imgname}gray.png
