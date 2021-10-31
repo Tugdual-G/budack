@@ -6,7 +6,7 @@ budack=${dir}budack
 trajdir=${dir}trajectories_data/
 traj=${trajdir}traj
 imgname=temp
-nx=4000
+nx=1000
 startingpts=50000
 density=4
 
@@ -21,7 +21,7 @@ if [ $nx = 2000 ];then ny=1666;fi
 if [ $nx = 4000 ];then ny=3332;fi
 if [ $nx = 8000 ];then ny=6666;fi
 #------------- computing  -------------
-mpiexec --mca opal_warn_on_missing_libcuda 0 $budack $nx 800 0 $startingpts $density
+mpiexec --mca opal_warn_on_missing_libcuda 0 $budack $nx 200 0 $startingpts $density
 # mv ${traj}0.char ${trajdir}r.char
 # mv ${traj}1.char ${trajdir}g.char
 mv ${traj}2.char ${trajdir}b.char
@@ -29,7 +29,7 @@ mv ${traj}2.char ${trajdir}b.char
 echo --------- Creating gray scale images --------
 magick convert -size ${nx}x${ny} -depth 8 \
      GRAY:${trajdir}b.char \
-      -gamma 1.2 -rotate 90 ${trajdir}${imgname}gray.png
+      -rotate 90 ${trajdir}${imgname}gray.png
 
 magick convert -size ${nx}x${ny} -depth 8 \
      GRAY:${trajdir}hints.char \

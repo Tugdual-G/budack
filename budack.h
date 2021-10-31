@@ -276,7 +276,8 @@ void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B) {
 
 void save_chargrayscale(unsigned int ny, unsigned int nx, unsigned int *B,
                         unsigned char weight, char fname[]) {
-  int rank = MPI_Comm_rank(MPI_COMM_WORLD, &rank); // the rank of the process
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank); // the rank of the process
   unsigned long size = nx * ny;
   unsigned char *B_c;
   B_c = (unsigned char *)malloc(sizeof(unsigned char) * size);
