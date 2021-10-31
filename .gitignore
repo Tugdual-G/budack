@@ -7,4 +7,6 @@ tmp/
 *.npy
 *.jpg
 !trajhd.png
+!colors.png
+!colors1.png
 *.ccls-cache
