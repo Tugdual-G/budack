@@ -3,7 +3,7 @@ Generate beautiful figures based on the Mandelbrot fractal gost-points via paral
 
 ([click to explore the rich details of the picture below](https://raw.githubusercontent.com/Tugdual-G/budack/main/trajectories_data/trajhd.png))
 
-![alt text](images_examples/trajhd.png)
+![alt text](images_exemples/trajhd.png)
 
 Run with mpiexec to compute and save the trajectories.
 
@@ -19,11 +19,11 @@ Using ImageMagick's command-line utilities, you can also combine different traje
     magick convert -size 1000x833 -depth 8 R:R.char G:G.char B:B.char -combine -gamma 1.2 -rotate 90 colors.png 
 
 Which gives:
-![alt text](images_examples/colors.png)
+![alt text](images_exemples/colors.png)
 
 or,
 
-![alt text](images_examples/colors1.png)
+![alt text](images_exemples/colors1.png)
 
 Computing scheme :
 
