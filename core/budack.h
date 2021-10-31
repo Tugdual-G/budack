@@ -38,7 +38,7 @@ double randomfloat(double min, double max) {
 
 void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
                   unsigned int *M_traj0, unsigned int *M_traj1,
-                  unsigned int *M_traj2, long int D, int maxit, int minit,
+                  unsigned int *M_traj2, unsigned char D, int maxit, int minit,
                   double *M_brdr, unsigned int Nborder) {
   // Initialisation
   int rank; // the rank of the process
@@ -108,7 +108,7 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
         }
       }
       if (rank == 0 && ntraj % 1000 == 0) {
-        printf("\rPoints per pixel %-.4f/%1ld (core 0)", current_D, D);
+        printf("\rPoints per pixel %-.4f/%1uc (core 0)", current_D, D);
         fflush(stdout);
       }
       current_D = (ntraj * dx * dx) / A;
@@ -116,7 +116,7 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
     itraj++;
   }
   if (rank == 0) {
-    printf("\rPoints per pixel %-.4f/%1ld (core 0)\n", current_D, D);
+    printf("\rPoints per pixel %-.4f/%1uc (core 0)\n", current_D, D);
   }
 }
 
@@ -141,15 +141,15 @@ void border(unsigned int depth, long int Npts, double *M_brdr, unsigned char *M,
   }
   start = lenght_brdr;
 
-  fp = fopen("hint.double", "rb");
+  fp = fopen("core/hint.double", "rb");
   if (fp == NULL) {
     if (rank == 0) {
-      printf("'hint.double' not found, creating file : \n");
+      printf("'core/hint.double' not found, creating file : \n");
     }
     border_start(depth, M_brdr, M, lenght_brdr, a0, b0, dx, nx);
     k = lenght_brdr;
     if (rank == 0) {
-      fp = fopen("hint.double", "wb");
+      fp = fopen("core/hint.double", "wb");
       fwrite(M_brdr, sizeof(double), 2 * lenght_brdr, fp);
       printf(", written border points file \n");
       fclose(fp);
@@ -302,4 +302,25 @@ void save_chargrayscale(unsigned int ny, unsigned int nx, unsigned int *B,
   fwrite(B_c, sizeof(unsigned char), size, fptr);
   fclose(fptr);
   free(B_c);
+}
+
+struct Param {
+  unsigned int *nx, *maxit, *minit;
+  unsigned char *D;
+};
+
+void parse(int argc, char *argv[], struct Param *param) {
+  if (argc > 1) {
+    *(*param).nx = atoi(argv[1]);
+    *(*param).maxit = atoi(argv[2]);
+    *(*param).minit = atoi(argv[3]);
+    *(*param).D = atoi(argv[4]);
+  }
+}
+void export_param(struct Param param, char filename[]) {
+  FILE *fptr;
+  fptr = fopen(filename, "w+");
+  fprintf(fptr, "nx=%u \nmaxit=%u \nminit=%u \nPoints per pixels=%u \n",
+          *param.nx, *param.maxit, *param.minit, *param.D);
+  fclose(fptr);
 }
