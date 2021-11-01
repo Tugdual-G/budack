@@ -1,5 +1,5 @@
 # budack
-Generate beautiful figures based on the Mandelbrot fractal gost-points via parallel computing. 
+ Parallel computation of the Mandelbrot set gost-points. 
 
 ([click to explore the rich details](https://raw.githubusercontent.com/Tugdual-G/budack/main/images_exemples/trajhd.png))
 
