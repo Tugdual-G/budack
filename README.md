@@ -3,7 +3,7 @@ Generate beautiful figures based on the Mandelbrot fractal gost-points via paral
 
 ([click to explore the rich details of the picture below](https://raw.githubusercontent.com/Tugdual-G/budack/main/trajectories_data/trajhd.png))
 
-![alt text](images_exemples/trajhd.png)
+![alt text](images_exemples/zoom.png)
 
 Run with mpiexec to compute and save the trajectories.
 

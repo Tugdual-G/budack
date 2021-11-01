@@ -6,6 +6,7 @@ tmp/
 *.egg
 *.npy
 *.jpg
+!zoom.png
 !trajhd.png
 !colors.png
 !colors1.png
