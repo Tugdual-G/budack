@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 budack=core/budack
 trajdir0=output/traj0/
-trajdir=output/images/
-nx=1000
+trajdir=output/images1/
+nx=8000
 density=8
 
 # Image sizes (nx x ny):
@@ -13,8 +13,9 @@ if [ $nx = 8000 ];then ny=6666;fi
 
 # #------------- computing  -------------
 mpiexec --mca opal_warn_on_missing_libcuda 0 $budack $nx 200 0 $density
-rm ${trajdir}/*
-mv ${trajdir0}/* $trajdir
+mkdir ${trajdir}
+rm ${trajdir}*
+mv ${trajdir0}* $trajdir
 
 echo --------- Creating gray scale images --------
 magick convert -size ${nx}x${ny} -depth 8 \
@@ -28,27 +29,27 @@ magick convert -size ${nx}x${ny} -depth 8 \
 echo --------- Creating colored image --------
 magick convert -size ${nx}x${ny} -depth 8 \
     gray:${trajdir}traj0.char gray:${trajdir}traj1.char gray:${trajdir}traj2.char \
-    -channel RGB -combine -gamma 1.2 -rotate 90 ${trajdir}rgb0.png
+    -channel RGB -combine -gamma 1.1 -rotate 90 ${trajdir}rgb0.png
 
 magick convert -size ${nx}x${ny} -depth 8 \
     gray:${trajdir}traj0.char gray:${trajdir}traj2.char gray:${trajdir}traj1.char \
-    -channel RGB -combine -gamma 1.3 -rotate 90 ${trajdir}rgb1.png
+    -channel RGB -combine -gamma 1.1 -rotate 90 ${trajdir}rgb1.png
 
 magick convert -size ${nx}x${ny} -depth 8 \
     gray:${trajdir}traj1.char gray:${trajdir}traj0.char gray:${trajdir}traj2.char \
-    -channel RGB -combine -gamma 1 -rotate 90 ${trajdir}rgb2.png
+    -channel RGB -combine -gamma 1.1 -rotate 90 ${trajdir}rgb2.png
 
 magick convert -size ${nx}x${ny} -depth 8 \
-    gray:${trajdir}traj1.char gray:${trajdir}traj2.char gray:${trajdir}traj1.char \
-    -channel RGB -combine -gamma 1 -rotate 90 ${trajdir}rgb3.png
+    gray:${trajdir}traj1.char gray:${trajdir}traj2.char gray:${trajdir}traj0.char \
+    -channel RGB -combine -gamma 1.1 -rotate 90 ${trajdir}rgb3.png
 
 magick convert -size ${nx}x${ny} -depth 8 \
     gray:${trajdir}traj2.char gray:${trajdir}traj0.char gray:${trajdir}traj1.char \
-    -channel RGB -combine -gamma 1 -rotate 90 ${trajdir}rgb4.png
+    -channel RGB -combine -gamma 1.1 -rotate 90 ${trajdir}rgb4.png
 
 magick convert -size ${nx}x${ny} -depth 8 \
     gray:${trajdir}traj2.char gray:${trajdir}traj1.char gray:${trajdir}traj0.char \
-    -channel RGB -combine -gamma 1 -rotate 90 ${trajdir}rgb5.png
+    -channel RGB -combine -gamma 1.1 -rotate 90 ${trajdir}rgb5.png
 
 echo --------- Opening image --------
 sxiv ${trajdir}hints.png ${trajdir}gray.png ${trajdir}rgb0.png ${trajdir}rgb1.png \

@@ -11,3 +11,4 @@ tmp/
 !colors.png
 !colors1.png
 *.ccls-cache
+output/

@@ -51,8 +51,8 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
   unsigned int ij[maxit * 2 + 1], i;
   char diverge = 0;
   float current_D = 0;
-  int maxit0 = minit + (maxit - minit) / 100.0,
-      maxit1 = minit + (maxit - minit) / 10.0;
+  int maxit0 = minit + (maxit - minit) / 3.0,
+      maxit1 = minit + 2 * (maxit - minit) / 3.0;
 
   dx = (x_b[1] - x_b[0]) / nx;
   while (current_D < D) {
@@ -102,13 +102,13 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
           *(M_traj1 + nx * ij[i] + ij[i + 1]) += 1;
         }
       } else {
-        ntraj++;
         for (i = 0; i < it; i += 2) {
           *(M_traj2 + nx * ij[i] + ij[i + 1]) += 1;
         }
       }
+      ntraj++;
       if (rank == 0 && ntraj % 1000 == 0) {
-        printf("\rPoints per pixel %-.4f/%1uc (core 0)", current_D, D);
+        printf("\rPoints per pixel %-.4f/%1u (core 0)", current_D, D);
         fflush(stdout);
       }
       current_D = (ntraj * dx * dx) / A;
