@@ -32,6 +32,7 @@ Computing scheme :
 - Slightly offset these points by a binomial distribution.
 - Compute their trajectories.
 - The trajectories are writen on disk as 8 bits grayscale binaries and 16 bits grayscale binaries whithout any header (i.e. 2 files are written to disk for red, green and blue). The N fisrt points are written to disk too.
+- The paramaters are exported too, in the param.txt file. 
 
 Images generation:
 - Use ImageMagick to generate images from 8 bites grayscale.
