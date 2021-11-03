@@ -18,7 +18,7 @@ trajdir0="${scrpt_dir}"/output/traj0/
 trajdir="${scrpt_dir}"/output/myfirstbudack/
 
 nx=1000 # Number of pixels in vertical direction
-density=64 # Number of point per pixels, higher = less noise but slower
+density=16 # Number of point per pixels, higher = less noise but slower
 maxit=200 # Maximum number of iterations
 minit=40 # Minimum number of iterations
 
@@ -27,7 +27,7 @@ minit=40 # Minimum number of iterations
 # but finer details will appear if it is low.
 # This parameter will change the points where the normal distribution is centered.
 # This coresspond to the max iteration (escape time) of these points.
-depth=110
+depth=80
 #depth=$(((maxit+minit)/2))
 
 echo images output directory "${trajdir}"
@@ -40,7 +40,7 @@ if [ $nx = 8000 ];then ny=6666;fi
 if [ $nx = 10000 ];then ny=8332;fi
 
 # #------------- computing  -------------
-mpiexec --mca opal_warn_on_missing_libcuda 0 $budack $nx $maxit $minit $density $depth
+mpiexec --mca opal_warn_on_missing_libcuda 0 "$budack" "$nx" "$maxit" "$minit" "$density" "$depth"
 mkdir "${trajdir}"
 rm "${trajdir}"*
 cp "${trajdir0}"* "$trajdir"
@@ -57,6 +57,8 @@ magick convert -size ${nx}x${ny} -depth 8 \
       -rotate 90 "${trajdir}"hints.png
 
 echo --------- Creating colored image --------
+
+# Here we create every possible RGB combinations
 
 magick convert -size ${nx}x${ny} -depth 8 \
     gray:"${trajdir}"traj0.char gray:"${trajdir}"traj1.char gray:"${trajdir}"traj2.char \

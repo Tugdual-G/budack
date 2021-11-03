@@ -80,11 +80,17 @@ int main(int argc, char *argv[]) {
 
   long int Nborder = nx * ny / 40;
 
-  double *M_brdr = (double *)calloc(2 * Nborder, sizeof(double));
-  unsigned char *M = (unsigned char *)calloc(nx * ny, sizeof(double));
+  double *M_brdr = NULL;
+  M_brdr = (double *)calloc(2 * Nborder, sizeof(double));
   if (M_brdr == NULL) {
-    printf("Error, no memory space allocated for computing");
-    return 0;
+    printf("Error no memory allocated to border points \n");
+    exit(1);
+  }
+  unsigned char *M = NULL;
+  M = (unsigned char *)calloc(nx * ny, sizeof(double));
+  if (M == NULL) {
+    printf("Error, no memory allocated for border points grid \n");
+    exit(1);
   }
 
   border(depth, Nborder, M_brdr, M, start, a[0], b[0], dx, nx);
@@ -101,18 +107,37 @@ int main(int argc, char *argv[]) {
   ////////////////////////////////////////////////
 
   srand((unsigned int)time(NULL));
-  unsigned int *B0, *B1, *B2, *B_sum0, *B_sum1, *B_sum2;
+  unsigned int *B0 = NULL, *B1 = NULL, *B2 = NULL, *B_sum0 = NULL,
+               *B_sum1 = NULL, *B_sum2 = NULL;
+
+  if (rank == 0) {
+    B_sum0 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+    if (B_sum0 == NULL) {
+      printf("\n Error, no memory allocated for trajectories sum \n");
+      exit(1);
+    }
+  } else if (rank == 1) {
+    B_sum1 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+    if (B_sum1 == NULL) {
+      printf("\n Error, no memory allocated for trajectories sum \n");
+      exit(1);
+    }
+  } else if (rank == 2) {
+    B_sum2 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+    if (B_sum2 == NULL) {
+      printf("\n Error, no memory allocated for trajectories sum \n");
+      exit(1);
+    }
+  }
   B0 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
   B1 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
   B2 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
-  B_sum0 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
-  B_sum1 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
-  B_sum2 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
-  D = D / world_size;
-  if (B_sum2 == NULL) {
-    printf("Error, no memory space (heap) allocated for storing results");
-    return 0;
+
+  if (B0 == NULL || B1 == NULL || B2 == NULL) {
+    printf("\n Error, no memory allocated for trajectories \n");
+    exit(1);
   }
+  D = D / world_size;
 
   if (rank == 0) {
     begin = clock();
@@ -151,13 +176,19 @@ int main(int argc, char *argv[]) {
     save(traj2fname_uint, B_sum2, sizeof(unsigned int), nx * ny);
   }
   MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == 0) {
+    free(B_sum0);
+  }
+  if (rank == 1) {
+    free(B_sum1);
+  }
+  if (rank == 2) {
+    free(B_sum2);
+  }
   free(M_brdr);
   free(B0);
-  free(B_sum0);
   free(B1);
-  free(B_sum1);
   free(B2);
-  free(B_sum2);
   if (rank == 0) {
     printf("allocated space freed \n");
   }

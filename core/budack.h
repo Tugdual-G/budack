@@ -48,18 +48,19 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
 
   // ntraj is the nuber of trajectories.
   // it is the number of iteration for a trajectory.
-  long unsigned int npts = 0, it = 0, itraj = 0;
+  long unsigned int it = 0, itraj = 0;
+  long long unsigned int npts = 0;
   unsigned int ij[maxit * 2 + 1], i;
   char diverge = 0;
   float current_D = 0;
   int maxit0 = minit + (maxit - minit) / 3.0,
       maxit1 = minit + 2 * (maxit - minit) / 3.0;
-  int minit_old = minit;
+  unsigned char n0, n1;
 
   dx = (x_b[1] - x_b[0]) / nx;
   while (current_D < D) {
-    y0 = M_brdr[(2 * itraj) % Nborder] + gaussrand(0.005);
-    x0 = M_brdr[(2 * itraj + 1) % Nborder] + gaussrand(0.005);
+    y0 = M_brdr[(2 * itraj) % Nborder] + gaussrand(0.01);
+    x0 = M_brdr[(2 * itraj + 1) % Nborder] + gaussrand(0.01);
 
     it = 0;
     x = x0;
@@ -73,6 +74,8 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
 
     while (it < maxit && diverge == 0) {
       // Storing the trajectories
+      n0 = 0;
+      n1 = 0;
       y = 2 * x * y + y0;
       x = x2 - y2 + x0;
       x2 = x * x;
@@ -87,13 +90,13 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
       }
     }
     if (diverge == 1 && it > minit) {
-      if (it < maxit0) {
-        minit = maxit0;
+      if (it < maxit0 && n0 < 4) {
+        n0++;
         for (i = 0; i < it; i += 2) {
           *(M_traj0 + nx * ij[i] + ij[i + 1]) += 1;
         }
-      } else if (it < maxit1) {
-        minit = maxit1;
+      } else if (it < maxit1 && n1 < 3) {
+        n1++;
         for (i = 0; i < it; i += 2) {
           *(M_traj1 + nx * ij[i] + ij[i + 1]) += 1;
         }
@@ -101,12 +104,11 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
         for (i = 0; i < it; i += 2) {
           *(M_traj2 + nx * ij[i] + ij[i + 1]) += 1;
         }
-        minit = minit_old;
         itraj++;
         npts += it;
         current_D = (npts * dx * dx) / A;
       }
-      if (rank == 0 && itraj % 100 == 0) {
+      if (rank == 0 && itraj % 10 == 0) {
         printf("\rPoints per pixel %-.4f/%.4f (core 0)", current_D, D);
         fflush(stdout);
       }
@@ -289,8 +291,12 @@ void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank); // the rank of the process
   unsigned long size = nx * ny;
-  unsigned char *B_c;
+  unsigned char *B_c = NULL;
   B_c = (unsigned char *)malloc(sizeof(unsigned char) * size);
+  if (B_c == NULL) {
+    printf("Error no memory allocated to save char grayscale \n");
+    exit(1);
+  }
 
   unsigned long k;
   unsigned int bmax = 0;
@@ -317,8 +323,12 @@ void save_uint_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank); // the rank of the process
   unsigned long size = nx * ny;
-  unsigned char *B_c;
+  unsigned char *B_c = NULL;
   B_c = (unsigned char *)malloc(sizeof(unsigned char) * size);
+  if (B_c == NULL) {
+    printf("Error no memory allocated to save uint grayscale \n");
+    exit(1);
+  }
 
   unsigned long k;
   float bmax = 0;
