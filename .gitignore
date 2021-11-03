@@ -7,6 +7,7 @@ tmp/
 *.npy
 *.jpg
 !zoom.png
+!zoom1.png
 !trajhd.png
 !colors.png
 !colors1.png

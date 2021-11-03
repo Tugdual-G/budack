@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
+#
+# This is the main executable.
+# This script generate the trajectories and the images.
 
 # Location of the executable, you shouldn't change this.
-budack=core/budack
-cwd=$(pwd)
+scrpt_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+echo $scrpt_dir
+budack="${scrpt_dir}"/core/budack
 
 # Output of the computation, it is hardcoded in the c program for now
 # you shouldn't change this.
-trajdir0=${cwd}/output/traj0/
+trajdir0="${scrpt_dir}"/output/traj0/
 
 # Output directory of the images, all the data will be moved
 # here (param.txt , traj.char , etc...),
 # you can change the name of the dir if you want:
-trajdir=${cwd}/output/UHD10_000_m300/
+trajdir="${scrpt_dir}"/output/myfirstbudack/
 
-nx=10000 # Number of pixels in vertical direction
+nx=1000 # Number of pixels in vertical direction
 density=64 # Number of point per pixels, higher = less noise but slower
-maxit=400 # Maximum number of iterations
+maxit=200 # Maximum number of iterations
 minit=40 # Minimum number of iterations
 
 # This will change greatly the apparence of the images,
@@ -23,7 +27,7 @@ minit=40 # Minimum number of iterations
 # but finer details will appear if it is low.
 # This parameter will change the points where the normal distribution is centered.
 # This coresspond to the max iteration (escape time) of these points.
-depth=80
+depth=110
 #depth=$(((maxit+minit)/2))
 
 echo images output directory "${trajdir}"
@@ -54,27 +58,29 @@ magick convert -size ${nx}x${ny} -depth 8 \
 
 echo --------- Creating colored image --------
 
-# magick convert -size ${nx}x${ny} -depth 8 \
-#     gray:"${trajdir}"traj0.char gray:"${trajdir}"traj1.char gray:"${trajdir}"traj2.char \
-#     -channel RGB -combine -rotate 90 "${trajdir}"rgb0.png
+magick convert -size ${nx}x${ny} -depth 8 \
+    gray:"${trajdir}"traj0.char gray:"${trajdir}"traj1.char gray:"${trajdir}"traj2.char \
+    -channel RGB -combine -noise 1 -rotate 90 "${trajdir}"rgb0.png
 
-# magick convert -size ${nx}x${ny} -depth 8 \
-#     gray:"${trajdir}"traj1.char gray:"${trajdir}"traj0.char gray:"${trajdir}"traj2.char \
-#     -channel RGB -combine -rotate 90 "${trajdir}"rgb2.png
+magick convert -size ${nx}x${ny} -depth 8 \
+    gray:"${trajdir}"traj0.char gray:"${trajdir}"traj2.char gray:"${trajdir}"traj1.char \
+    -channel RGB -combine -rotate 90 "${trajdir}"rgb1.png
 
-# magick convert -size ${nx}x${ny} -depth 8 \
-#     gray:"${trajdir}"traj1.char gray:"${trajdir}"traj2.char gray:"${trajdir}"traj0.char \
-#     -channel RGB -combine -rotate 90 "${trajdir}"rgb3.png
+magick convert -size ${nx}x${ny} -depth 8 \
+    gray:"${trajdir}"traj1.char gray:"${trajdir}"traj0.char gray:"${trajdir}"traj2.char \
+    -channel RGB -combine -rotate 90 "${trajdir}"rgb2.png
 
-# magick convert -size ${nx}x${ny} -depth 8 \
-#     gray:"${trajdir}"traj2.char gray:"${trajdir}"traj0.char gray:"${trajdir}"traj1.char \
-#     -channel RGB -combine -rotate 90 "${trajdir}"rgb4.png
+magick convert -size ${nx}x${ny} -depth 8 \
+    gray:"${trajdir}"traj1.char gray:"${trajdir}"traj2.char gray:"${trajdir}"traj0.char \
+    -channel RGB -combine -rotate 90 "${trajdir}"rgb3.png
 
-# magick convert -size ${nx}x${ny} -depth 8 \
-#     gray:"${trajdir}"traj2.char gray:"${trajdir}"traj1.char gray:"${trajdir}"traj0.char \
-#     -channel RGB -combine -rotate 90 "${trajdir}"rgb5.png
+magick convert -size ${nx}x${ny} -depth 8 \
+    gray:"${trajdir}"traj2.char gray:"${trajdir}"traj0.char gray:"${trajdir}"traj1.char \
+    -channel RGB -combine -rotate 90 "${trajdir}"rgb4.png
 
-# echo --------- Opening image --------
-# sxiv "${trajdir}"rgb0.png "${trajdir}"rgb1.png
-# "${trajdir}"rgb2.png "${trajdir}"rgb3.png "${trajdir}"rgb4.png "${trajdir}"rgb5.png
-#  "${trajdir}"hints.png "${trajdir}"gray.png
+magick convert -size ${nx}x${ny} -depth 8 \
+    gray:"${trajdir}"traj2.char gray:"${trajdir}"traj1.char gray:"${trajdir}"traj0.char \
+    -channel RGB -combine -rotate 90 "${trajdir}"rgb5.png
+
+echo --------- Opening image --------
+sxiv "${trajdir}"rgb[0-5].png "${trajdir}"hints.png "${trajdir}"gray.png

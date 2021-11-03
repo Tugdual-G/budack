@@ -19,7 +19,7 @@ char *traj2fname = dirname1 "traj2.char";
 char *traj0fname_uint = dirname1 "traj0.uint";
 char *traj1fname_uint = dirname1 "traj1.uint";
 char *traj2fname_uint = dirname1 "traj2.uint";
-char *hintsfname = dirname1 "hints.uint";
+char *hintsfname = dirname1 "hints.char";
 
 int main(int argc, char *argv[]) {
   /* chdir(".."); */
