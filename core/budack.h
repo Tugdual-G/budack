@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #define PI 3.141592654
 const long int A = 9;
@@ -126,7 +127,7 @@ void border(unsigned int depth, long int Npts, double *M_brdr, unsigned char *M,
   // relative to the subdomain bodaries.
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  FILE *fp;
+  FILE *fp = NULL;
   double x, y, x0, y0, x2, y2;
   unsigned int it = 0;
   unsigned int k = 0, n = 0;
@@ -161,6 +162,10 @@ void border(unsigned int depth, long int Npts, double *M_brdr, unsigned char *M,
     k = lenght_brdr;
     if (rank == 0) {
       fp = fopen(filename, "wb");
+      if (fp == NULL) {
+        printf(" Error, cannot create %s \n", filename);
+        exit(1);
+      }
       fwrite(M_brdr, sizeof(double), 2 * Lenght_strt, fp);
       printf(", written border points file \n");
       fclose(fp);
@@ -261,7 +266,7 @@ void border_start(unsigned int depth, double *M_brdr, unsigned char *M,
 
 void save(char fname[], void *data, unsigned int size,
           unsigned int n_elements) {
-  FILE *fp;
+  FILE *fp = NULL;
   fp = fopen(fname, "wb");
   if (fp == NULL) {
     printf("Error opening file %s, cannot save.\n", fname);
@@ -366,10 +371,36 @@ void parse(int argc, char *argv[], struct Param *param) {
   }
 }
 void export_param(struct Param param, char filename[]) {
-  FILE *fptr;
+  FILE *fptr = NULL;
   fptr = fopen(filename, "w+");
+  if (fptr == NULL) {
+    printf(" Error cannot creat param file \n");
+    exit(1);
+  }
   fprintf(fptr,
           "nx=%u \nmaxit=%u \nminit=%u \nPoints per pixels=%.4f \ndepth=%u \n",
           *param.nx, *param.maxit, *param.minit, *param.D, *param.depth);
   fclose(fptr);
+}
+
+void cd_to_root_dir(char *arg0) {
+  // This procedure is only here to hide an realy ugly
+  // part of code.
+  char *cwd = NULL;
+  cwd = (char *)malloc(500 * sizeof(char));
+  if (cwd == NULL) {
+    printf(" Cannot find working directory \n");
+    exit(1);
+  }
+  strncpy(cwd, arg0, strlen(arg0) - 6 * sizeof(char));
+  char *rightdir = NULL;
+  rightdir = strstr(cwd, "core");
+  if (rightdir == NULL && strlen(cwd) != 0) {
+    printf(" oulasavapa \n");
+    exit(0);
+  } else if (strlen(cwd) != 0) {
+    chdir(cwd);
+  }
+  chdir("..");
+  free(cwd);
 }

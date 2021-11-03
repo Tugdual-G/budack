@@ -22,7 +22,9 @@ char *traj2fname_uint = dirname1 "traj2.uint";
 char *hintsfname = dirname1 "hints.char";
 
 int main(int argc, char *argv[]) {
-  /* chdir(".."); */
+
+  cd_to_root_dir(argv[0]);
+
   MPI_Init(NULL, NULL); // initialize MPI environment
   int world_size;       // number of processes
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -57,7 +59,8 @@ int main(int argc, char *argv[]) {
   b[1] = ((int)ny / 2) * dx;
 
   if (rank == 0) {
-
+    // FIXME The creation of the directories should be done
+    // during the installation.
     mkdir(dirname0, 0777);
     mkdir(dirname1, 0777);
     printf("\nnx = %d ; ny = %d ; ny*nx= %d \n", nx, ny, ny * nx);
@@ -78,7 +81,7 @@ int main(int argc, char *argv[]) {
 
   clock_t begin = clock();
 
-  long int Nborder = nx * ny / 40;
+  long int Nborder = nx * ny / (world_size * 50);
 
   double *M_brdr = NULL;
   M_brdr = (double *)calloc(2 * Nborder, sizeof(double));
@@ -93,7 +96,13 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
+  // For short computation it is faster to not compute these points
+  // and just use the hint files
   border(depth, Nborder, M_brdr, M, start, a[0], b[0], dx, nx);
+  if (rank == 0) {
+    save(hintsfname, M, sizeof(unsigned char), nx * ny);
+  }
+  free(M);
 
   clock_t end = clock();
   float t_comp = (float)(end - begin);
@@ -163,7 +172,6 @@ int main(int argc, char *argv[]) {
     mirror_traj(ny, nx, B_sum0); // Make the image symetric
     save_char_grayscale(ny, nx, B_sum0, 1, traj0fname);
     save(traj0fname_uint, B_sum0, sizeof(unsigned int), nx * ny);
-    save(hintsfname, M, sizeof(unsigned char), nx * ny);
 
   } else if (rank == 1) {
     mirror_traj(ny, nx, B_sum1); // Make the image symetric
