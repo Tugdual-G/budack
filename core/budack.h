@@ -2,6 +2,7 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #define PI 3.141592654
@@ -38,7 +39,7 @@ double randomfloat(double min, double max) {
 
 void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
                   unsigned int *M_traj0, unsigned int *M_traj1,
-                  unsigned int *M_traj2, unsigned char D, int maxit, int minit,
+                  unsigned int *M_traj2, float D, int maxit, int minit,
                   double *M_brdr, unsigned int Nborder) {
   // Initialisation
   int rank; // the rank of the process
@@ -47,17 +48,18 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
 
   // ntraj is the nuber of trajectories.
   // it is the number of iteration for a trajectory.
-  long int ntraj = 0, it = 0, itraj = 0;
+  long unsigned int npts = 0, it = 0, itraj = 0;
   unsigned int ij[maxit * 2 + 1], i;
   char diverge = 0;
   float current_D = 0;
   int maxit0 = minit + (maxit - minit) / 3.0,
       maxit1 = minit + 2 * (maxit - minit) / 3.0;
+  int minit_old = minit;
 
   dx = (x_b[1] - x_b[0]) / nx;
   while (current_D < D) {
-    y0 = M_brdr[(2 * itraj) % Nborder] + gaussrand(dx);
-    x0 = M_brdr[(2 * itraj + 1) % Nborder] + gaussrand(dx);
+    y0 = M_brdr[(2 * itraj) % Nborder] + gaussrand(0.005);
+    x0 = M_brdr[(2 * itraj + 1) % Nborder] + gaussrand(0.005);
 
     it = 0;
     x = x0;
@@ -66,14 +68,6 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
     y2 = y * y;
     diverge = 0;
 
-    /* // Here we test if the point is obviously in the set */
-    /* // i.e. main cardioid and disk */
-    /* q = (x-1/4)*(x-1/4)+y2; */
-    /* if (q*(q+(x-1/4))<y2/5 || (x+1)*(x+1)+y2<1/17){ */
-    /*   // If the point is in the set we do not iterate */
-    /*   // and we search for another */
-    /*   it = maxit; */
-    /* } */
     ij[it * 2] = (y - y_b[0]) / dx;
     ij[it * 2 + 1] = (x - x_b[0]) / dx;
 
@@ -94,10 +88,12 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
     }
     if (diverge == 1 && it > minit) {
       if (it < maxit0) {
+        minit = maxit0;
         for (i = 0; i < it; i += 2) {
           *(M_traj0 + nx * ij[i] + ij[i + 1]) += 1;
         }
       } else if (it < maxit1) {
+        minit = maxit1;
         for (i = 0; i < it; i += 2) {
           *(M_traj1 + nx * ij[i] + ij[i + 1]) += 1;
         }
@@ -105,18 +101,19 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
         for (i = 0; i < it; i += 2) {
           *(M_traj2 + nx * ij[i] + ij[i + 1]) += 1;
         }
+        minit = minit_old;
+        itraj++;
+        npts += it;
+        current_D = (npts * dx * dx) / A;
       }
-      ntraj++;
-      if (rank == 0 && ntraj % 1000 == 0) {
-        printf("\rPoints per pixel %-.4f/%1u (core 0)", current_D, D);
+      if (rank == 0 && itraj % 100 == 0) {
+        printf("\rPoints per pixel %-.4f/%.4f (core 0)", current_D, D);
         fflush(stdout);
       }
-      current_D = (ntraj * dx * dx) / A;
     }
-    itraj++;
   }
   if (rank == 0) {
-    printf("\rPoints per pixel %-.4f/%1uc (core 0)\n", current_D, D);
+    printf("\rPoints per pixel %-.4f/%.4f (core 0)\n", current_D, D);
   }
 }
 
@@ -135,22 +132,34 @@ void border(unsigned int depth, long int Npts, double *M_brdr, unsigned char *M,
   float sigma = 0.005;
   unsigned int i, j;
   unsigned int lenght_brdr = Lenght_strt;
+  char filename[24];
+  if (depth <= 50) {
+    strcpy(filename, "core/hints50.double");
+  } else if (depth > 50 && depth <= 100) {
+    strcpy(filename, "core/hints100.double");
+  } else if (depth > 100 && depth <= 1000) {
+    strcpy(filename, "core/hints1000.double");
+  } else if (depth > 1000 && depth <= 10000) {
+    strcpy(filename, "core/hints10000.double");
+  } else if (depth > 10000) {
+    strcpy(filename, "core/hints100000.double");
+  }
 
   if (Npts <= lenght_brdr * 2) {
     lenght_brdr = Npts / 2;
   }
   start = lenght_brdr;
 
-  fp = fopen("core/hint.double", "rb");
+  fp = fopen(filename, "rb");
   if (fp == NULL) {
     if (rank == 0) {
-      printf("'core/hint.double' not found, creating file : \n");
+      printf("%s not found, creating file : \n", filename);
     }
-    border_start(depth, M_brdr, M, lenght_brdr, a0, b0, dx, nx);
+    border_start(depth, M_brdr, M, Lenght_strt, a0, b0, dx, nx);
     k = lenght_brdr;
     if (rank == 0) {
-      fp = fopen("core/hint.double", "wb");
-      fwrite(M_brdr, sizeof(double), 2 * lenght_brdr, fp);
+      fp = fopen(filename, "wb");
+      fwrite(M_brdr, sizeof(double), 2 * Lenght_strt, fp);
       printf(", written border points file \n");
       fclose(fp);
     }
@@ -161,7 +170,7 @@ void border(unsigned int depth, long int Npts, double *M_brdr, unsigned char *M,
 
   while (2 * k < Npts) {
     it = 0;
-    n = n % start;
+    n = n % Lenght_strt;
     x0 = *(M_brdr + n * 2 + 1) + gaussrand(sigma);
     y0 = *(M_brdr + n * 2) + gaussrand(sigma);
     x = x0;
@@ -248,14 +257,15 @@ void border_start(unsigned int depth, double *M_brdr, unsigned char *M,
   }
 }
 
-void save(char fname[], void *data, unsigned int size) {
+void save(char fname[], void *data, unsigned int size,
+          unsigned int n_elements) {
   FILE *fp;
-  fp = fopen(fname, "w+");
+  fp = fopen(fname, "wb");
   if (fp == NULL) {
     printf("Error opening file %s, cannot save.\n", fname);
     exit(1);
   }
-  fwrite(data, size, 1, fp);
+  fwrite(data, size, n_elements, fp);
   fclose(fp);
 }
 
@@ -274,8 +284,8 @@ void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B) {
   }
 }
 
-void save_chargrayscale(unsigned int ny, unsigned int nx, unsigned int *B,
-                        unsigned char weight, char fname[]) {
+void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
+                         unsigned char weight, char fname[]) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank); // the rank of the process
   unsigned long size = nx * ny;
@@ -284,8 +294,6 @@ void save_chargrayscale(unsigned int ny, unsigned int nx, unsigned int *B,
 
   unsigned long k;
   unsigned int bmax = 0;
-
-  // mirror_traj(ny, nx, B);
 
   for (k = 0; k < size; k++) {
     if (*(B + k) > bmax) {
@@ -298,15 +306,44 @@ void save_chargrayscale(unsigned int ny, unsigned int nx, unsigned int *B,
   }
 
   FILE *fptr;
-  fptr = fopen(fname, "w+");
+  fptr = fopen(fname, "wb");
+  fwrite(B_c, sizeof(unsigned char), size, fptr);
+  fclose(fptr);
+  free(B_c);
+}
+
+void save_uint_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
+                         float gamma, char fname[]) {
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank); // the rank of the process
+  unsigned long size = nx * ny;
+  unsigned char *B_c;
+  B_c = (unsigned char *)malloc(sizeof(unsigned char) * size);
+
+  unsigned long k;
+  float bmax = 0;
+
+  for (k = 0; k < size; k++) {
+    if (*(B + k) > bmax) {
+      bmax = *(B + k);
+    }
+  }
+  bmax = pow((float)bmax, 1 / gamma);
+
+  for (k = 0; k < size; k++) {
+    *(B_c + k) = pow((float)*(B + k), 1 / gamma) * 255 / bmax;
+  }
+
+  FILE *fptr;
+  fptr = fopen(fname, "wb");
   fwrite(B_c, sizeof(unsigned char), size, fptr);
   fclose(fptr);
   free(B_c);
 }
 
 struct Param {
-  unsigned int *nx, *maxit, *minit;
-  unsigned char *D;
+  unsigned int *nx, *maxit, *minit, *depth;
+  float *D;
 };
 
 void parse(int argc, char *argv[], struct Param *param) {
@@ -314,13 +351,15 @@ void parse(int argc, char *argv[], struct Param *param) {
     *(*param).nx = atoi(argv[1]);
     *(*param).maxit = atoi(argv[2]);
     *(*param).minit = atoi(argv[3]);
-    *(*param).D = atoi(argv[4]);
+    *(*param).D = (float)atoi(argv[4]);
+    *(*param).depth = atoi(argv[5]);
   }
 }
 void export_param(struct Param param, char filename[]) {
   FILE *fptr;
   fptr = fopen(filename, "w+");
-  fprintf(fptr, "nx=%u \nmaxit=%u \nminit=%u \nPoints per pixels=%u \n",
-          *param.nx, *param.maxit, *param.minit, *param.D);
+  fprintf(fptr,
+          "nx=%u \nmaxit=%u \nminit=%u \nPoints per pixels=%.4f \ndepth=%u \n",
+          *param.nx, *param.maxit, *param.minit, *param.D, *param.depth);
   fclose(fptr);
 }
