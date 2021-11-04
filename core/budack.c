@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
   // x and y are discretized at the midle of the cells
   double dx = (a[1] - a[0]) / nx;
   unsigned int ny = 2 * (unsigned int)(b[1] / dx);
+  param.ny = &ny;
   b[0] = -((int)ny / 2) * dx;
   b[1] = ((int)ny / 2) * dx;
 

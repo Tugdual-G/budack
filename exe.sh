@@ -5,7 +5,6 @@
 
 # Location of the executable, you shouldn't change this.
 scrpt_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-echo $scrpt_dir
 budack="${scrpt_dir}"/core/budack
 
 # Output of the computation, it is hardcoded in the c program for now
@@ -22,6 +21,9 @@ density=16 # Number of point per pixels, higher = less noise but slower
 maxit=200 # Maximum number of iterations
 minit=40 # Minimum number of iterations
 
+# Parameters file
+params_f="${trajdir}"param.txt
+
 # This will change greatly the apparence of the images,
 # the closer it is to maxit, the faster the computation,
 # but finer details will appear if it is low.
@@ -32,18 +34,14 @@ depth=80
 
 echo images output directory "${trajdir}"
 
-# Image sizes (nx x ny):
-if [ $nx = 1000 ];then ny=832;fi
-if [ $nx = 2000 ];then ny=1666;fi
-if [ $nx = 4000 ];then ny=3332;fi
-if [ $nx = 8000 ];then ny=6666;fi
-if [ $nx = 10000 ];then ny=8332;fi
-
 # #------------- computing  -------------
 mpiexec --mca opal_warn_on_missing_libcuda 0 "$budack" "$nx" "$maxit" "$minit" "$density" "$depth"
 mkdir "${trajdir}"
 rm "${trajdir}"*
 cp "${trajdir0}"* "$trajdir"
+
+# Retrieving number of pixels in y direction
+ny=$(grep 'ny' "${params_f}" | awk -F "=" '{print $2}')
 
 echo --------- Creating gray scale images --------
 # A grayscale image of the higher escape time points.

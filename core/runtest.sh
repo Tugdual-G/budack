@@ -6,7 +6,8 @@ cwd=$(pwd)
 budack=core/budack
 trajdir0=output/traj0/
 trajdir=output/test1/
-nx=4000
+params_f="${trajdir}"param.txt
+nx=1000
 density=16
 maxit=200
 minit=40
@@ -16,16 +17,14 @@ depth=80
 echo images output directory "${cwd}"/"${trajdir}"
 
 # Image sizes (nx x ny):
-if [ $nx = 1000 ];then ny=832;fi
-if [ $nx = 2000 ];then ny=1666;fi
-if [ $nx = 4000 ];then ny=3332;fi
-if [ $nx = 8000 ];then ny=6666;fi
 
 # #------------- computing  -------------
 mpiexec --mca opal_warn_on_missing_libcuda 0 $budack $nx $maxit $minit $density $depth
 mkdir ${trajdir}
 rm ${trajdir}*
-mv ${trajdir0}* $trajdir
+cp ${trajdir0}* $trajdir
+ny=$(grep 'ny' "${params_f}" | awk -F "=" '{print $2}')
+echo $ny
 
 echo --------- Creating gray scale images --------
 magick convert -size ${nx}x${ny} -depth 8 \

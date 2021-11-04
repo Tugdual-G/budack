@@ -358,7 +358,7 @@ void save_uint_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
 }
 
 struct Param {
-  unsigned int *nx, *maxit, *minit, *depth;
+  unsigned int *nx, *ny, *maxit, *minit, *depth;
   float *D;
 };
 
@@ -379,8 +379,10 @@ void export_param(struct Param param, char filename[]) {
     exit(1);
   }
   fprintf(fptr,
-          "nx=%u \nmaxit=%u \nminit=%u \nPoints per pixels=%.4f \ndepth=%u \n",
-          *param.nx, *param.maxit, *param.minit, *param.D, *param.depth);
+          "nx=%u \nny=%u \nmaxit=%u \nminit=%u \nPoints per pixels=%.4f "
+          "\ndepth=%u \n",
+          *param.nx, *param.ny, *param.maxit, *param.minit, *param.D,
+          *param.depth);
   fclose(fptr);
 }
 
