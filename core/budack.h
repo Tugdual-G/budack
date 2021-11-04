@@ -57,6 +57,7 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
   int maxit0 = minit + (maxit - minit) / 3.0,
       maxit1 = minit + 2 * (maxit - minit) / 3.0;
   unsigned char n0, n1;
+  unsigned char n0_max = maxit / maxit0, n1_max = maxit / maxit1;
 
   dx = (x_b[1] - x_b[0]) / nx;
   while (current_D < D) {
@@ -91,12 +92,12 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
       }
     }
     if (diverge == 1 && it > minit) {
-      if (it < maxit0 && n0 < 4) {
+      if (it < maxit0 && n0 < n0_max) {
         n0++;
         for (i = 0; i < it; i += 2) {
           *(M_traj0 + nx * ij[i] + ij[i + 1]) += 1;
         }
-      } else if (it < maxit1 && n1 < 3) {
+      } else if (it < maxit1 && n1 < n1_max) {
         n1++;
         for (i = 0; i < it; i += 2) {
           *(M_traj1 + nx * ij[i] + ij[i + 1]) += 1;
