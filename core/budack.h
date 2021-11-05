@@ -229,11 +229,12 @@ void border_start(unsigned int depth, double *M_brdr, unsigned char *M,
     it = 0;
 
     x0 = randomfloat(-2, 0.5);
-    if (x0 < -0.75) {
-      y0 = randomfloat(0, 0.5);
-    } else {
-      y0 = randomfloat(0, 1.5);
-    }
+    y0 = randomfloat(0, 1.5);
+    /* if (x0 < -0.75) { */
+    /*   y0 = randomfloat(0, 0.5); */
+    /* } else { */
+    /*   y0 = randomfloat(0, 1.5); */
+    /* } */
 
     x = x0;
     y = y0;
