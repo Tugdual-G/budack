@@ -8,9 +8,8 @@
 
 #define PI 3.141592654
 const long int A = 9;
-const unsigned int Lenght_strt = 50000;
 
-void border_start(unsigned int depth, double *M_brdr, unsigned char *M,
+void border_start(unsigned int depth, double *starting_pts, unsigned char *M,
                   unsigned int start, float a0, float b0, double dx,
                   unsigned int nx);
 
@@ -41,7 +40,7 @@ double randomfloat(double min, double max) {
 void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
                   unsigned int *M_traj0, unsigned int *M_traj1,
                   unsigned int *M_traj2, float D, int maxit, int minit,
-                  double *M_brdr, unsigned int Nborder) {
+                  double *starting_pts, unsigned int lenght_strt) {
   // Initialisation
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -61,8 +60,8 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
 
   dx = (x_b[1] - x_b[0]) / nx;
   while (current_D < D) {
-    y0 = M_brdr[(2 * itraj) % Nborder] + gaussrand(0.01);
-    x0 = M_brdr[(2 * itraj + 1) % Nborder] + gaussrand(0.01);
+    y0 = starting_pts[(2 * itraj) % lenght_strt] + gaussrand(0.01);
+    x0 = starting_pts[(2 * itraj + 1) % lenght_strt] + gaussrand(0.01);
 
     it = 0;
     x = x0;
@@ -111,31 +110,25 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
         current_D = (npts * dx * dx) / A;
       }
       if (rank == 0 && itraj % 10 == 0) {
-        printf("\rPoints per pixel %-.4f/%.4f (core 0)", current_D, D);
+        printf("\rPoints per pixel per core %-.4f/%.4f ", current_D, D);
         fflush(stdout);
       }
     }
   }
   if (rank == 0) {
-    printf("\rPoints per pixel %-.4f/%.4f (core 0)\n", current_D, D);
+    printf("\rPoints per pixel per core %-.4f/%.4f \n", current_D, D);
   }
 }
 
-void border(unsigned int depth, long int Npts, double *M_brdr, unsigned char *M,
-            unsigned int start, float a0, float b0, double dx,
+void border(unsigned int depth, long int lenght_strt, double *starting_pts,
+            unsigned char *M, unsigned int start, float a0, float b0, double dx,
             unsigned int nx) {
   // Return the list of the points at the boundary in index coordinates
   // relative to the subdomain bodaries.
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  FILE *fp = NULL;
-  double x, y, x0, y0, x2, y2;
-  unsigned int it = 0;
-  unsigned int k = 0, n = 0;
-  unsigned char mindepth = depth * 0.8;
-  float sigma = 0.005;
-  unsigned int i, j;
-  unsigned int lenght_brdr = Lenght_strt;
+  int world_size; // number of processes
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   char filename[24];
   if (depth <= 50) {
     strcpy(filename, "core/hints50.double");
@@ -149,70 +142,45 @@ void border(unsigned int depth, long int Npts, double *M_brdr, unsigned char *M,
     strcpy(filename, "core/hints100000.double");
   }
 
-  if (Npts <= lenght_brdr * 2) {
-    lenght_brdr = Npts / 2;
-  }
-  start = lenght_brdr;
-
+  double *total_pts = NULL;
+  FILE *fp = NULL;
   fp = fopen(filename, "rb");
   if (fp == NULL) {
+    // If we can't find the file we create it.
     if (rank == 0) {
       printf("%s not found, creating file : \n", filename);
+      total_pts =
+          (double *)malloc(lenght_strt * 2 * world_size * sizeof(double));
+      if (total_pts == NULL) {
+        printf("Error no memory allocated to save starting pts \n");
+        exit(1);
+      }
     }
-    border_start(depth, M_brdr, M, Lenght_strt, a0, b0, dx, nx);
-    k = lenght_brdr;
+
+    border_start(depth, starting_pts, M, lenght_strt, a0, b0, dx, nx);
+    MPI_Gather(starting_pts, lenght_strt * 2, MPI_DOUBLE, total_pts,
+               lenght_strt * 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     if (rank == 0) {
       fp = fopen(filename, "wb");
       if (fp == NULL) {
         printf(" Error, cannot create %s \n", filename);
         exit(1);
       }
-      fwrite(M_brdr, sizeof(double), 2 * Lenght_strt, fp);
+
+      fwrite(total_pts, sizeof(double), world_size * 2 * lenght_strt, fp);
+      free(total_pts);
       printf(", written border points file \n");
       fclose(fp);
     }
   } else {
-    fread(M_brdr, sizeof(double), 2 * lenght_brdr, fp);
+    // If we find the file we load the points.
+    fseek(fp, lenght_strt * sizeof(double) * 2 * rank, SEEK_SET);
+    fread(starting_pts, sizeof(double), 2 * lenght_strt, fp);
     fclose(fp);
-  }
-
-  while (2 * k < Npts) {
-    it = 0;
-    n = n % Lenght_strt;
-    x0 = *(M_brdr + n * 2 + 1) + gaussrand(sigma);
-    y0 = *(M_brdr + n * 2) + gaussrand(sigma);
-    x = x0;
-    y = y0;
-    x2 = x * x;
-    y2 = y * y;
-
-    while (it < depth && x2 + y2 < 4) {
-      y = 2 * x * y + y0;
-      x = x2 - y2 + x0;
-      x2 = x * x;
-      y2 = y * y;
-      it++;
-    }
-    if (it < depth && it >= mindepth) {
-      *(M_brdr + k * 2) = y0;
-      *(M_brdr + k * 2 + 1) = x0;
-      i = (y0 - b0) / dx;
-      j = (x0 - a0) / dx;
-      *(M + i * nx + j) = 255;
-      k++;
-      n++;
-      if (rank == 0) {
-        printf("\rGenerating starting point : %u / %ld", k, Npts / 2);
-        fflush(stdout);
-      }
-    }
-  }
-  if (rank == 0) {
-    printf("\n");
   }
 }
 
-void border_start(unsigned int depth, double *M_brdr, unsigned char *M,
+void border_start(unsigned int depth, double *starting_pts, unsigned char *M,
                   unsigned int start, float a0, float b0, double dx,
                   unsigned int nx) {
   // Return the list of the points at the boundary in index coordinates
@@ -230,11 +198,6 @@ void border_start(unsigned int depth, double *M_brdr, unsigned char *M,
 
     x0 = randomfloat(-2, 0.5);
     y0 = randomfloat(0, 1.5);
-    /* if (x0 < -0.75) { */
-    /*   y0 = randomfloat(0, 0.5); */
-    /* } else { */
-    /*   y0 = randomfloat(0, 1.5); */
-    /* } */
 
     x = x0;
     y = y0;
@@ -249,8 +212,8 @@ void border_start(unsigned int depth, double *M_brdr, unsigned char *M,
       it++;
     }
     if (it < depth && it >= mindepth) {
-      *(M_brdr + k * 2) = y0;
-      *(M_brdr + k * 2 + 1) = x0;
+      *(starting_pts + k * 2) = y0;
+      *(starting_pts + k * 2 + 1) = x0;
       i = (y0 - b0) / dx;
       j = (x0 - a0) / dx;
       *(M + i * nx + j) = 255;
@@ -313,7 +276,7 @@ void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
       bmax = *(B + k);
     }
   }
-  printf("Maximum accumulted points %u , rank %d \n", bmax, rank);
+  printf("Maximum accumulted points per pixel %u , rank %d \n", bmax, rank);
   for (k = 0; k < size; k++) {
     *(B_c + k) = (double)*(B + k) * 255 / (weight * bmax);
   }
@@ -393,7 +356,6 @@ void cd_to_root_dir(char *arg0) {
   char *cwd = NULL;
   cwd = (char *)malloc(500 * sizeof(char));
   if (cwd == NULL) {
-    printf(" Cannot find working directory \n");
     exit(1);
   }
   strncpy(cwd, arg0, strlen(arg0) - 6 * sizeof(char));

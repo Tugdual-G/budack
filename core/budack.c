@@ -10,6 +10,7 @@
 
 const int e6 = 1000000;
 const int e3 = 1000;
+
 #define dirname0 "output/"
 #define dirname1 "output/traj0/"
 char *paramfname = dirname1 "param.txt";
@@ -20,6 +21,8 @@ char *traj0fname_uint = dirname1 "traj0.uint";
 char *traj1fname_uint = dirname1 "traj1.uint";
 char *traj2fname_uint = dirname1 "traj2.uint";
 char *hintsfname = dirname1 "hints.char";
+
+const unsigned int LENGHT_STRT = 50000;
 
 int main(int argc, char *argv[]) {
 
@@ -83,10 +86,9 @@ int main(int argc, char *argv[]) {
 
   clock_t begin = clock();
 
-  long int Nborder = nx * ny / (world_size * 50);
-
   double *M_brdr = NULL;
-  M_brdr = (double *)calloc(2 * Nborder, sizeof(double));
+  unsigned int lenght_brdr = LENGHT_STRT / world_size;
+  M_brdr = (double *)calloc(2 * lenght_brdr, sizeof(double));
   if (M_brdr == NULL) {
     printf("Error no memory allocated to border points \n");
     exit(1);
@@ -100,7 +102,7 @@ int main(int argc, char *argv[]) {
 
   // For short computation it is faster to not compute these points
   // and just use the hint files
-  border(depth, Nborder, M_brdr, M, start, a[0], b[0], dx, nx);
+  border(depth, lenght_brdr, M_brdr, M, start, a[0], b[0], dx, nx);
   if (rank == 0) {
     save(hintsfname, M, sizeof(unsigned char), nx * ny);
   }
@@ -110,7 +112,8 @@ int main(int argc, char *argv[]) {
   float t_comp = (float)(end - begin);
   t_comp = t_comp / CLOCKS_PER_SEC;
   if (rank == 0) {
-    printf("Core 0 found %ld border points in %f s\n\n", Nborder / 2, t_comp);
+    printf("Core 0 loaded %u border points in %f s\n\n", lenght_brdr / 2,
+           t_comp);
   }
 
   ////////////////////////////////////////////////
@@ -153,7 +156,7 @@ int main(int argc, char *argv[]) {
     begin = clock();
   }
 
-  trajectories(nx, ny, a, b, B0, B1, B2, D, maxit, minit, M_brdr, Nborder);
+  trajectories(nx, ny, a, b, B0, B1, B2, D, maxit, minit, M_brdr, lenght_brdr);
 
   MPI_Reduce(B0, B_sum0, nx * ny, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
   MPI_Reduce(B1, B_sum1, nx * ny, MPI_INT, MPI_SUM, 1, MPI_COMM_WORLD);
@@ -169,7 +172,7 @@ int main(int argc, char *argv[]) {
     // Storing variables on disk
     // save("trajectories_data/arraysize.uint", arraysize, sizeof(arraysize));
     // save("trajectories_data/boundary.uint", M_brdr, sizeof(double) *
-    // Nborder);
+    // lenght_brdr);
     mirror_traj(ny, nx, B_sum0); // Make the image symetric
     save_char_grayscale(ny, nx, B_sum0, 1, traj0fname);
     save(traj0fname_uint, B_sum0, sizeof(unsigned int), nx * ny);
@@ -198,9 +201,6 @@ int main(int argc, char *argv[]) {
   free(B0);
   free(B1);
   free(B2);
-  if (rank == 0) {
-    printf("allocated space freed \n");
-  }
   MPI_Finalize(); // finish MPI environment
   return 0;
 }
