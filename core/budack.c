@@ -38,8 +38,8 @@ int main(int argc, char *argv[]) {
   unsigned int nx = 1 * e3; // Grid size x axis
   unsigned int maxit = 200; // maximum number of iteration per point
   unsigned int minit = 0;   // minimum iteration per point
-  float D = 16; // Points per pixels of interest (i.e. number of points
-                // independant of the domain size), higher = less noise
+  float D = 8; // Points per pixels of interest (i.e. number of points
+               // independant of the domain size), higher = less noise
   float a[2] = {-2.3, 1.3}, b[2] = {-1.5, 1.5}; // size of the domain a+bi
   unsigned int start = 500;
   unsigned int depth = maxit;
@@ -78,6 +78,7 @@ int main(int argc, char *argv[]) {
   //   Searching for points on the boundary
   ////////////////////////////////////////////////
 
+  srand((unsigned int)rank + (unsigned int)time(NULL));
   // There is no need to parallelise this part
 
   clock_t begin = clock();
@@ -116,7 +117,6 @@ int main(int argc, char *argv[]) {
   //   Cumputing the trajectories
   ////////////////////////////////////////////////
 
-  srand((unsigned int)time(NULL));
   unsigned int *B0 = NULL, *B1 = NULL, *B2 = NULL, *B_sum0 = NULL,
                *B_sum1 = NULL, *B_sum2 = NULL;
 

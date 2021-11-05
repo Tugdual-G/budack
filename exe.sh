@@ -17,7 +17,7 @@ trajdir0="${scrpt_dir}"/output/traj0/
 trajdir="${scrpt_dir}"/output/myfirstbudack/
 
 nx=1000 # Number of pixels in vertical direction
-density=16 # Number of point per pixels, higher = less noise but slower
+density=8 # Number of point per pixels, higher = less noise but slower
 maxit=200 # Maximum number of iterations
 minit=40 # Minimum number of iterations
 
