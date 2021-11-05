@@ -12,6 +12,11 @@ The easiest way to run the computation is by using the script exe.sh which will 
     ./exe.sh
 
 Different combinations of colors will be generated.
+
+You can compile the code by running make.
+
+    cd core/
+    make
     
 **Computing scheme**
 
