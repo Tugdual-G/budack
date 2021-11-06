@@ -129,18 +129,24 @@ void border(unsigned int depth, long int lenght_strt, double *starting_pts,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   int world_size; // number of processes
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+  // Creating the name of the file we want to read or write to.
+  // Each file depth can only be a multiple of 20 to avoid
+  // exessive acumulation of hints files.
   char filename[100];
-  if (depth <= 50) {
-    strcpy(filename, "core/hints50.double");
-  } else if (depth > 50 && depth <= 100) {
-    strcpy(filename, "core/hints100.double");
-  } else if (depth > 100 && depth <= 1000) {
-    strcpy(filename, "core/hints1000.double");
-  } else if (depth > 1000 && depth <= 10000) {
-    strcpy(filename, "core/hints10000.double");
-  } else if (depth > 10000) {
-    strcpy(filename, "core/hints100000.double");
+  // depth can't be bigger than 10^7.
+  char depth_str[10];
+  if (depth > 10000000) {
+    printf("\e[1;31mERROR: \e[0;37mdepth cannot be greater than 10000000 \n");
+    MPI_Finalize();
+    exit(1);
   }
+  // The depth is rounded to the nearest multiple of 20
+  depth = ((depth - 11) / 20 + 1) * 20;
+  strcpy(filename, "core/hints");
+  snprintf(depth_str, 9, "%u", depth);
+  strncat(filename, depth_str, 99);
+  strncat(filename, ".double", 99);
 
   double *total_pts = NULL;
   FILE *fp = NULL;
@@ -152,7 +158,8 @@ void border(unsigned int depth, long int lenght_strt, double *starting_pts,
       total_pts =
           (double *)malloc(lenght_strt * 2 * world_size * sizeof(double));
       if (total_pts == NULL) {
-        printf("Error no memory allocated to save starting pts \n");
+        printf("\e[1;31mERROR: \e[0;37mno memory allocated to save starting "
+               "pts \n");
         exit(1);
       }
     }
@@ -163,7 +170,7 @@ void border(unsigned int depth, long int lenght_strt, double *starting_pts,
     if (rank == 0) {
       fp = fopen(filename, "wb");
       if (fp == NULL) {
-        printf(" Error, cannot create %s \n", filename);
+        printf("\e[1;31mERROR: \e[0;37mcannot create %s \n", filename);
         exit(1);
       }
 
@@ -234,7 +241,7 @@ void save(char fname[], void *data, unsigned int size,
   FILE *fp = NULL;
   fp = fopen(fname, "wb");
   if (fp == NULL) {
-    printf("Error opening file %s, cannot save.\n", fname);
+    printf("\e[1;31mERROR: \e[0;37mopening file %s, cannot save.\n", fname);
     exit(1);
   }
   fwrite(data, size, n_elements, fp);
@@ -264,7 +271,8 @@ void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
   unsigned char *B_c = NULL;
   B_c = (unsigned char *)malloc(sizeof(unsigned char) * size);
   if (B_c == NULL) {
-    printf("Error no memory allocated to save char grayscale \n");
+    printf(
+        "\e[1;31mERROR: \e[0;37mno memory allocated to save char grayscale \n");
     exit(1);
   }
 
@@ -296,7 +304,8 @@ void save_uint_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
   unsigned char *B_c = NULL;
   B_c = (unsigned char *)malloc(sizeof(unsigned char) * size);
   if (B_c == NULL) {
-    printf("Error no memory allocated to save uint grayscale \n");
+    printf(
+        "\e[1;31mERROR: \e[0;37mno memory allocated to save uint grayscale \n");
     exit(1);
   }
 
@@ -339,7 +348,7 @@ void export_param(struct Param param, char filename[]) {
   FILE *fptr = NULL;
   fptr = fopen(filename, "w+");
   if (fptr == NULL) {
-    printf(" Error cannot creat param file \n");
+    printf("\e[1;31mERROR: \e[0;37mcannot create param file \n");
     exit(1);
   }
   fprintf(fptr,
@@ -356,13 +365,16 @@ void cd_to_root_dir(char *arg0) {
   char *cwd = NULL;
   cwd = (char *)malloc(500 * sizeof(char));
   if (cwd == NULL) {
+    printf("\e[1;31mERROR: \e[0;37mcannot allocate in function "
+           "cd_root_to_dir() \n");
     exit(1);
   }
   strncpy(cwd, arg0, strlen(arg0) - 6 * sizeof(char));
   char *rightdir = NULL;
   rightdir = strstr(cwd, "core");
   if (rightdir == NULL && strlen(cwd) != 0) {
-    printf(" oulasavapa \n");
+    printf("\e[1;31mERROR: \e[0;37mcannot determine if in the right "
+           "working directory \n");
     exit(0);
   } else if (strlen(cwd) != 0) {
     chdir(cwd);
