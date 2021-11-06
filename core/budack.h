@@ -129,7 +129,7 @@ void border(unsigned int depth, long int lenght_strt, double *starting_pts,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   int world_size; // number of processes
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-  char filename[24];
+  char filename[100];
   if (depth <= 50) {
     strcpy(filename, "core/hints50.double");
   } else if (depth > 50 && depth <= 100) {
