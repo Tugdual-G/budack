@@ -67,11 +67,19 @@ int main(int argc, char *argv[]) {
     // during the installation.
     mkdir(dirname0, 0777);
     mkdir(dirname1, 0777);
+    float max_memory;
+    // in bytes
+    max_memory = nx * ny * sizeof(unsigned int) * (3 + 3 * world_size) +
+                 LENGHT_STRT * sizeof(double);
+    // In GiB
+    max_memory /= (float)1024 * 1024 * 1024;
+    printf("Maximum memory usage possible : %.2f GiB \n", max_memory);
+
     printf("\nnx = %d ; ny = %d ; ny*nx= %d \n", nx, ny, ny * nx);
     printf("maxit = %d ; minit = %d ; Points per pixels %.2f ; depth = %u \n",
            maxit, minit, D, depth);
     export_param(param, paramfname);
-    printf("Depth of the data written to disk : %lu \n \n",
+    printf("Depth of the data written to disk : %lu bytes \n \n",
            sizeof(unsigned char));
     printf("Begin computation on %d cores \n", world_size);
   }
@@ -150,18 +158,23 @@ int main(int argc, char *argv[]) {
     printf("\n Error, no memory allocated for trajectories \n");
     exit(1);
   }
+
   D = D / world_size;
 
+  MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
     begin = clock();
   }
 
   trajectories(nx, ny, a, b, B0, B1, B2, D, maxit, minit, M_brdr, lenght_brdr);
+  free(M_brdr);
 
   MPI_Reduce(B0, B_sum0, nx * ny, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+  free(B0);
   MPI_Reduce(B1, B_sum1, nx * ny, MPI_INT, MPI_SUM, 1, MPI_COMM_WORLD);
+  free(B1);
   MPI_Reduce(B2, B_sum2, nx * ny, MPI_INT, MPI_SUM, 2, MPI_COMM_WORLD);
-  // unsigned int arraysize[2] = {ny, nx};
+  free(B2);
 
   if (rank == 0) {
     end = clock();
@@ -170,9 +183,6 @@ int main(int argc, char *argv[]) {
     printf("\nTime elapsed computing trajectories %f s \n", t_comp);
 
     // Storing variables on disk
-    // save("trajectories_data/arraysize.uint", arraysize, sizeof(arraysize));
-    // save("trajectories_data/boundary.uint", M_brdr, sizeof(double) *
-    // lenght_brdr);
     mirror_traj(ny, nx, B_sum0); // Make the image symetric
     save_char_grayscale(ny, nx, B_sum0, 1, traj0fname);
     save(traj0fname_uint, B_sum0, sizeof(unsigned int), nx * ny);
@@ -187,20 +197,10 @@ int main(int argc, char *argv[]) {
     save_char_grayscale(ny, nx, B_sum2, 1, traj2fname);
     save(traj2fname_uint, B_sum2, sizeof(unsigned int), nx * ny);
   }
+  free(B_sum0);
+  free(B_sum1);
+  free(B_sum2);
   MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == 0) {
-    free(B_sum0);
-  }
-  if (rank == 1) {
-    free(B_sum1);
-  }
-  if (rank == 2) {
-    free(B_sum2);
-  }
-  free(M_brdr);
-  free(B0);
-  free(B1);
-  free(B2);
   MPI_Finalize(); // finish MPI environment
   return 0;
 }
