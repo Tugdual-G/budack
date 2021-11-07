@@ -17,6 +17,9 @@ You can compile the code by running make.
 
     cd core/
     make
+
+**Note**   
+Because of the lazy memory allocation by Linux kernel, the memory usage will start very low and grow as new pixels are visited by the trajectories. To avoid any surprise, the total allocated size for the arrays is shown at the beginning of the program, in practice the ram usage will be lower than the estimation.
     
 **Computing scheme**
 
