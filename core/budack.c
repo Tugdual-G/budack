@@ -26,6 +26,7 @@ const unsigned int LENGHT_STRT = 50000;
 
 int main(int argc, char *argv[]) {
 
+  // This change the working directory to .../budack/
   cd_to_root_dir(argv[0]);
 
   MPI_Init(NULL, NULL); // initialize MPI environment
@@ -73,15 +74,12 @@ int main(int argc, char *argv[]) {
                  LENGHT_STRT * sizeof(double);
     // In GiB
     max_memory /= (float)1024 * 1024 * 1024;
-    printf("Maximum memory usage possible : %.2f GiB \n", max_memory);
+    printf("Maximum memory usage : %.2f GiB \n", max_memory);
 
-    printf("\nnx = %d ; ny = %d ; ny*nx= %d \n", nx, ny, ny * nx);
-    printf("maxit = %d ; minit = %d ; Points per pixels %.2f ; depth = %u \n",
-           maxit, minit, D, depth);
+    printf("nx = %d ; ny = %d ; depth = %u \n", nx, ny, depth);
+    printf("maxit = %d ; minit = %d ; Points per pixels %.2f \n", maxit, minit,
+           D);
     export_param(param, paramfname);
-    printf("Depth of the data written to disk : %lu bytes \n \n",
-           sizeof(unsigned char));
-    printf("Begin computation on %d cores \n", world_size);
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
@@ -115,14 +113,6 @@ int main(int argc, char *argv[]) {
     save(hintsfname, M, sizeof(unsigned char), nx * ny);
   }
   free(M);
-
-  clock_t end = clock();
-  float t_comp = (float)(end - begin);
-  t_comp = t_comp / CLOCKS_PER_SEC;
-  if (rank == 0) {
-    printf("Core 0 loaded %u border points in %f s\n\n", lenght_brdr / 2,
-           t_comp);
-  }
 
   ////////////////////////////////////////////////
   //   Cumputing the trajectories
@@ -162,6 +152,9 @@ int main(int argc, char *argv[]) {
   D = D / world_size;
 
   MPI_Barrier(MPI_COMM_WORLD);
+
+  clock_t end = clock();
+  float t_comp;
   if (rank == 0) {
     begin = clock();
   }
@@ -180,7 +173,7 @@ int main(int argc, char *argv[]) {
     end = clock();
     t_comp = (float)(end - begin);
     t_comp = t_comp / CLOCKS_PER_SEC;
-    printf("\nTime elapsed computing trajectories %f s \n", t_comp);
+    printf("Time elapsed computing trajectories %f s \n", t_comp);
 
     // Storing variables on disk
     mirror_traj(ny, nx, B_sum0); // Make the image symetric

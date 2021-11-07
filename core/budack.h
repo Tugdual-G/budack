@@ -265,8 +265,6 @@ void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B) {
 
 void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
                          unsigned char weight, char fname[]) {
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank); // the rank of the process
   unsigned long size = nx * ny;
   unsigned char *B_c = NULL;
   B_c = (unsigned char *)malloc(sizeof(unsigned char) * size);
@@ -284,7 +282,6 @@ void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
       bmax = *(B + k);
     }
   }
-  printf("Maximum accumulted points per pixel %u , rank %d \n", bmax, rank);
   for (k = 0; k < size; k++) {
     *(B_c + k) = (double)*(B + k) * 255 / (weight * bmax);
   }
