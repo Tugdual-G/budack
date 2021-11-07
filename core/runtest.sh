@@ -12,7 +12,7 @@ density=6
 maxit=250
 minit=40
 #depth=$(((maxit+minit)/2))
-depth=80
+depth=21
 
 echo images output directory "${cwd}"/"${trajdir}"
 

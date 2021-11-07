@@ -12,5 +12,7 @@ tmp/
 !colors.png
 !colors1.png
 *.ccls-cache
+*.double
+!hints80.double
 runbudack.sh
 output/
