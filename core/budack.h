@@ -82,10 +82,8 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
       x2 = x * x;
       y2 = y * y;
       it++;
-      if (x_b[0] < x && x < x_b[1] && y_b[0] < y && y < y_b[1]) {
-        ij[it * 2] = (y - y_b[0]) / dx;
-        ij[it * 2 + 1] = (x - x_b[0]) / dx;
-      }
+      ij[it * 2] = (y - y_b[0]) / dx;
+      ij[it * 2 + 1] = (x - x_b[0]) / dx;
       if (x2 + y2 > 4) {
         diverge = 1;
       }
@@ -94,16 +92,22 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
       if (it < maxit0 && n0 < n0_max) {
         n0++;
         for (i = 0; i < it; i += 2) {
-          *(M_traj0 + nx * ij[i] + ij[i + 1]) += 1;
+          if (ij[i] >= 0 && ij[i] < ny && ij[i + 1] >= 0 && ij[i + 1] < nx) {
+            *(M_traj0 + nx * ij[i] + ij[i + 1]) += 1;
+          }
         }
       } else if (it < maxit1 && n1 < n1_max) {
         n1++;
         for (i = 0; i < it; i += 2) {
-          *(M_traj1 + nx * ij[i] + ij[i + 1]) += 1;
+          if (ij[i] >= 0 && ij[i] < ny && ij[i + 1] >= 0 && ij[i + 1] < nx) {
+            *(M_traj1 + nx * ij[i] + ij[i + 1]) += 1;
+          }
         }
       } else {
         for (i = 0; i < it; i += 2) {
-          *(M_traj2 + nx * ij[i] + ij[i + 1]) += 1;
+          if (ij[i] >= 0 && ij[i] < ny && ij[i + 1] >= 0 && ij[i + 1] < nx) {
+            *(M_traj2 + nx * ij[i] + ij[i + 1]) += 1;
+          }
         }
         itraj++;
         npts += it;
