@@ -73,8 +73,8 @@ int main(int argc, char *argv[]) {
     max_memory = nx * ny * sizeof(unsigned int) * (3 + 3 * world_size) +
                  LENGHT_STRT * sizeof(double);
     // In GiB
-    max_memory /= (float)1024 * 1024 * 1024;
-    printf("Maximum memory usage : %.2f GiB \n", max_memory);
+    max_memory /= (float)1024 * 1024;
+    printf("Max memory usage :\x1b[32m %.0f MiB \x1b[0m\n", max_memory);
 
     printf("nx = %d ; ny = %d ; depth = %u \n", nx, ny, depth);
     printf("maxit = %d ; minit = %d ; Points per pixels %.2f \n", maxit, minit,

@@ -16,3 +16,4 @@ tmp/
 !hints80.double
 runbudack.sh
 output/
+*.dat

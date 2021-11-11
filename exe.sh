@@ -35,16 +35,23 @@ depth=80
 
 # #------------- computing  -------------
 mpiexec --mca opal_warn_on_missing_libcuda 0 "$budack" "$nx" "$maxit" "$minit" "$density" "$depth"
-mkdir "${trajdir}"
-rm "${trajdir}"*
+
+if [[ ! -d "${trajdir}" ]]
+   then
+    mkdir "${trajdir}"
+else
+    rm "${trajdir}"*
+fi
+
 cp "${trajdir0}"* "$trajdir"
 
 # Retrieving number of pixels in y direction
 ny=$(grep 'ny' "${params_f}" | awk -F "=" '{print $2}')
 
-echo --------- Creating gray scale images --------
-echo images output directory
-echo "${trajdir}"
+printf "\nimages output directory : \n"
+printf "%s \n" "${trajdir}"
+
+printf "Creating gray scale images"
 
 # A grayscale image of the higher escape time points.
 magick convert -size ${nx}x${ny} -depth 8 \
@@ -56,7 +63,7 @@ magick convert -size ${nx}x${ny} -depth 8 \
      GRAY:"${trajdir}"hints.char \
       -rotate 90 "${trajdir}"hints.png
 
-echo ----------- Creating colored image ----------
+printf "\rCreating colored images   "
 # Here we create every possible RGB combinations
 
 magick convert -size ${nx}x${ny} -depth 8 \
@@ -83,5 +90,6 @@ magick convert -size ${nx}x${ny} -depth 8 \
     gray:"${trajdir}"traj2.char gray:"${trajdir}"traj1.char gray:"${trajdir}"traj0.char \
     -channel RGB -combine -rotate 90 "${trajdir}"rgb5.png
 
-echo ---------------Opening image ----------------
+printf "\rOpening images           "
 sxiv "${trajdir}"rgb[0-5].png "${trajdir}"hints.png "${trajdir}"gray.png
+printf "\r                       \n"
