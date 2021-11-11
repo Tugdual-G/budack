@@ -7,7 +7,7 @@
 
 ## Usage
 
-The easiest way to run the computation is by using the script exe.sh which will also generate images. This script use ImageMagick to create PNG images and sxiv to open them. Editing the script allow to tune the parameters easily.
+The easiest way to run the computation is by using the script *exe.sh* which will also generate images. This script use ImageMagick to create PNG images and sxiv to open them. Editing the script allow to tune the parameters easily.
 
     ./exe.sh
 
@@ -24,6 +24,11 @@ Because of the lazy memory allocation by Linux kernel, the memory usage will sta
 ## Requirements
 - Open-MPI for parallel computing
 - Running the script on 3 cores at least
+    - If you only have one or two available cores, you could have to run the the computationusing the oversubscribe option in mpiexec such as (the script *exe.sh* take care of this case),
+ 
+            mpiexec --oversubscribe -n 3 budack [args]
+    
+
 - **Optionnal**
     - sxiv image viewer
     - ImageMagick, to create png pictures from the binary files.
@@ -38,7 +43,7 @@ Because of the lazy memory allocation by Linux kernel, the memory usage will sta
 
 ## Images processing
 - Use ImageMagick to generate images from 8 bites grayscale.
-- Use a gamma function on the 16 bits grayscale to enhance smoothly the trajectories, which are then turned to 8 bits grayscale to generate images from 3x8 bites rgb channels. This script is mostly needed for high resolution images. 
+- Use a gamma function on the 16 bits grayscale to enhance smoothly the trajectories, which are then turned to 8 bits grayscale to generate images from 3x8 bites rgb channels. See the script *gamma.sh* This script is mostly needed for high resolution images. 
    
 **Snapshots:**
 ![alt text](images_exemples/colors.png)
