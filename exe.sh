@@ -7,6 +7,16 @@
 scrpt_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 budack="${scrpt_dir}"/core/budack
 
+# The computation need 3 cores to run properly
+# if les than 3 cores available, we use the oversubscribe option.
+ncores=$(getconf _NPROCESSORS_ONLN)
+oversub=
+if [ $ncores -lt 3 ]
+   then
+    printf "Less than 3 cores available\n"
+    oversub="--oversubscribe -n 3"
+fi
+
 # Output of the computation, it is hardcoded in the c program for now
 # you shouldn't change this.
 trajdir0="${scrpt_dir}"/output/traj0/
@@ -34,7 +44,7 @@ depth=80
 
 
 # #------------- computing  -------------
-mpiexec --mca opal_warn_on_missing_libcuda 0 "$budack" "$nx" "$maxit" "$minit" "$density" "$depth"
+mpiexec $oversub -q "$budack" "$nx" "$maxit" "$minit" "$density" "$depth"
 
 if [[ ! -d "${trajdir}" ]]
    then
