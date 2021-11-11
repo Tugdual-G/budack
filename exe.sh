@@ -63,7 +63,7 @@ magick convert -size ${nx}x${ny} -depth 8 \
      GRAY:"${trajdir}"hints.char \
       -rotate 90 "${trajdir}"hints.png
 
-printf "\rCreating colored images   "
+printf "\x1b[2K \rCreating colored images"
 # Here we create every possible RGB combinations
 
 magick convert -size ${nx}x${ny} -depth 8 \
@@ -90,6 +90,6 @@ magick convert -size ${nx}x${ny} -depth 8 \
     gray:"${trajdir}"traj2.char gray:"${trajdir}"traj1.char gray:"${trajdir}"traj0.char \
     -channel RGB -combine -rotate 90 "${trajdir}"rgb5.png
 
-printf "\rOpening images           "
+printf "\x1b[2K \rOpening images"
 sxiv "${trajdir}"rgb[0-5].png "${trajdir}"hints.png "${trajdir}"gray.png
-printf "\r                       \n"
+printf "\x1b[2K \n"

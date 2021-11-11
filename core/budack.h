@@ -120,7 +120,9 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
     }
   }
   if (rank == 0) {
-    printf("\rPoints per pixel per core %-.4f/%.4f \n", current_D, D);
+    printf("\x1B[2K \r");
+    /* printf("\x1B[2K \rPoints per pixel per core %-.4f/%.4f \n", current_D,
+     * D); */
   }
 }
 
