@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#
+
 # This is the main executable.
 # This script generate the trajectories and the images.
 
@@ -13,7 +13,7 @@ trajdir0="${scrpt_dir}"/output/traj0/
 
 # Output directory of the images, all the data will be moved
 # here (param.txt , traj.char , etc...),
-# you can change the name of the dir if you want:
+# you can change the directory if you want:
 trajdir="${scrpt_dir}"/output/myfirstbudack/
 
 nx=1000 # Number of pixels in vertical direction
