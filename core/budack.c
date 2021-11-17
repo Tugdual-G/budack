@@ -22,7 +22,7 @@ char *traj1fname_uint = dirname1 "traj1.uint";
 char *traj2fname_uint = dirname1 "traj2.uint";
 char *hintsfname = dirname1 "hints.char";
 
-const unsigned int LENGHT_STRT = 50000;
+const unsigned int LENGTH_STRT = 50000;
 
 int main(int argc, char *argv[]) {
 
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     float max_memory;
     // in bytes
     max_memory = nx * ny * sizeof(unsigned int) * (3 + 3 * world_size) +
-                 LENGHT_STRT * sizeof(double);
+                 LENGTH_STRT * sizeof(double);
     // In GiB
     max_memory /= (float)1024 * 1024;
     printf("Max memory usage :\x1b[32m %.0f MiB \x1b[0m\n", max_memory);
@@ -93,8 +93,8 @@ int main(int argc, char *argv[]) {
   clock_t begin = clock();
 
   double *M_brdr = NULL;
-  unsigned int lenght_brdr = LENGHT_STRT / world_size;
-  M_brdr = (double *)calloc(2 * lenght_brdr, sizeof(double));
+  unsigned int length_brdr = LENGTH_STRT / world_size;
+  M_brdr = (double *)calloc(2 * length_brdr, sizeof(double));
   if (M_brdr == NULL) {
     printf("Error no memory allocated to border points \n");
     exit(1);
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 
   // For short computation it is faster to not compute these points
   // and just use the hint files
-  border(depth, lenght_brdr, M_brdr, M, start, a[0], b[0], dx, nx);
+  border(depth, length_brdr, M_brdr, M, start, a[0], b[0], dx, nx);
   if (rank == 0) {
     save(hintsfname, M, sizeof(unsigned char), nx * ny);
   }
@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
     begin = clock();
   }
 
-  trajectories(nx, ny, a, b, B0, B1, B2, D, maxit, minit, M_brdr, lenght_brdr);
+  trajectories(nx, ny, a, b, B0, B1, B2, D, maxit, minit, M_brdr, length_brdr);
   free(M_brdr);
 
   MPI_Reduce(B0, B_sum0, nx * ny, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);

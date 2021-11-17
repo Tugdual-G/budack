@@ -40,7 +40,7 @@ double randomfloat(double min, double max) {
 void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
                   unsigned int *M_traj0, unsigned int *M_traj1,
                   unsigned int *M_traj2, float D, int maxit, int minit,
-                  double *starting_pts, unsigned int lenght_strt) {
+                  double *starting_pts, unsigned int length_strt) {
   // Initialisation
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -60,8 +60,8 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
 
   dx = (x_b[1] - x_b[0]) / nx;
   while (current_D < D) {
-    y0 = starting_pts[(2 * itraj) % lenght_strt] + gaussrand(0.01);
-    x0 = starting_pts[(2 * itraj + 1) % lenght_strt] + gaussrand(0.01);
+    y0 = starting_pts[(2 * itraj) % length_strt] + gaussrand(0.01);
+    x0 = starting_pts[(2 * itraj + 1) % length_strt] + gaussrand(0.01);
 
     it = 0;
     x = x0;
@@ -126,7 +126,7 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
   }
 }
 
-void border(unsigned int depth, long int lenght_strt, double *starting_pts,
+void border(unsigned int depth, long int length_strt, double *starting_pts,
             unsigned char *M, unsigned int start, float a0, float b0, double dx,
             unsigned int nx) {
   // Return the list of the points at the boundary in index coordinates
@@ -162,7 +162,7 @@ void border(unsigned int depth, long int lenght_strt, double *starting_pts,
     if (rank == 0) {
       printf("%s not found, creating file : \n", filename);
       total_pts =
-          (double *)malloc(lenght_strt * 2 * world_size * sizeof(double));
+          (double *)malloc(length_strt * 2 * world_size * sizeof(double));
       if (total_pts == NULL) {
         printf("\e[1;31mERROR: \e[0;37mno memory allocated to save starting "
                "pts \n");
@@ -170,9 +170,9 @@ void border(unsigned int depth, long int lenght_strt, double *starting_pts,
       }
     }
 
-    border_start(depth, starting_pts, M, lenght_strt, a0, b0, dx, nx);
-    MPI_Gather(starting_pts, lenght_strt * 2, MPI_DOUBLE, total_pts,
-               lenght_strt * 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    border_start(depth, starting_pts, M, length_strt, a0, b0, dx, nx);
+    MPI_Gather(starting_pts, length_strt * 2, MPI_DOUBLE, total_pts,
+               length_strt * 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     if (rank == 0) {
       fp = fopen(filename, "wb");
       if (fp == NULL) {
@@ -180,15 +180,15 @@ void border(unsigned int depth, long int lenght_strt, double *starting_pts,
         exit(1);
       }
 
-      fwrite(total_pts, sizeof(double), world_size * 2 * lenght_strt, fp);
+      fwrite(total_pts, sizeof(double), world_size * 2 * length_strt, fp);
       free(total_pts);
       printf(", written border points file \n");
       fclose(fp);
     }
   } else {
     // If we find the file we load the points.
-    fseek(fp, lenght_strt * sizeof(double) * 2 * rank, SEEK_SET);
-    fread(starting_pts, sizeof(double), 2 * lenght_strt, fp);
+    fseek(fp, length_strt * sizeof(double) * 2 * rank, SEEK_SET);
+    fread(starting_pts, sizeof(double), 2 * length_strt, fp);
     fclose(fp);
   }
 }
