@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-
-# This script aplly gamma transform to enhance the images
+# This script apply gamma transform to enhance the images
 
 
 # Location of the executable, you shouldn't change this.
