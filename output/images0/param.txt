@@ -1,4 +1,0 @@
-nx=8000 
-maxit=10000 
-minit=100 
-Points per pixels=8 
