@@ -1,3 +1,4 @@
+#include "budack_core.h"
 #include <math.h>
 #include <mpi.h>
 #include <stdio.h>
@@ -8,10 +9,6 @@
 
 #define PI 3.141592654
 const long int A = 9;
-
-void border_start(unsigned int depth, double *starting_pts, unsigned char *M,
-                  unsigned int start, float a0, float b0, double dx,
-                  unsigned int nx);
 
 double gaussrand(double dx) {
   static double U, V;
@@ -333,10 +330,10 @@ void save_uint_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
   free(B_c);
 }
 
-struct Param {
-  unsigned int *nx, *ny, *maxit, *minit, *depth;
-  float *D;
-};
+/* struct Param { */
+/*   unsigned int *nx, *ny, *maxit, *minit, *depth; */
+/*   float *D; */
+/* }; */
 
 void parse(int argc, char *argv[], struct Param *param) {
   if (argc > 1) {

@@ -1,4 +1,4 @@
-#include "budack.h"
+#include "budack_core.h"
 #include <math.h>
 #include <mpi.h>
 #include <stdio.h>
@@ -109,6 +109,7 @@ int main(int argc, char *argv[]) {
   // For short computation it is faster to not compute these points
   // and just use the hint files
   border(depth, length_brdr, M_brdr, M, start, a[0], b[0], dx, nx);
+  // Saving a view of the points
   if (rank == 0) {
     save(hintsfname, M, sizeof(unsigned char), nx * ny);
   }
