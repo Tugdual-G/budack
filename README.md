@@ -24,7 +24,7 @@ Because of the lazy memory allocation by Linux kernel, the memory usage will sta
 ## Requirements
 - Open-MPI for parallel computing
 - Running the script on 3 cores at least
-    - If you only have one or two available cores, you may have to run the the computationusing the oversubscribe option in mpiexec such as (the script *exe.sh* take care of this case),
+    - If you only have one or two available cores, you may have to run the the computation using the oversubscribe option in mpiexec such as (the script *exe.sh* take care of this case),
  
             mpiexec --oversubscribe -n 3 budack [args]
     
