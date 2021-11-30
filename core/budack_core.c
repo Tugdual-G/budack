@@ -35,9 +35,10 @@ double randomfloat(double min, double max) {
 }
 
 void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
-                  unsigned int *M_traj0, unsigned int *M_traj1,
-                  unsigned int *M_traj2, float D, int maxit, int minit,
-                  double *starting_pts, unsigned int length_strt) {
+                  unsigned int *restrict M_traj0,
+                  unsigned int *restrict M_traj1,
+                  unsigned int *restrict M_traj2, float D, int maxit, int minit,
+                  double *restrict starting_pts, unsigned int length_strt) {
   // Initialisation
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -123,8 +124,9 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
   }
 }
 
-void border(unsigned int depth, long int length_strt, double *starting_pts,
-            unsigned char *M, unsigned int start, float a0, float b0, double dx,
+void border(unsigned int depth, long int length_strt,
+            double *restrict starting_pts, unsigned char *restrict M,
+            unsigned int start, float a0, float b0, double dx,
             unsigned int nx) {
   // Return the list of the points at the boundary in index coordinates
   // relative to the subdomain bodaries.
