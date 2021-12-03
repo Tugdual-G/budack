@@ -13,15 +13,16 @@ void border_start(unsigned int depth, double *starting_pts, unsigned char *M,
                   unsigned int start, float a0, float b0, double dx,
                   unsigned int nx);
 
-void save(char fname[], void *data, unsigned int size, unsigned int n_elements);
+void save(const char fname[], void *data, unsigned int size,
+          unsigned int n_elements);
 
 void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B);
 
 void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
-                         unsigned char weight, char fname[]);
+                         unsigned char weight, const char fname[]);
 
 void save_uint_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
-                         float gamma, char fname[]);
+                         float gamma, const char fname[]);
 
 struct Param {
   unsigned int *nx, *ny, *maxit, *minit, *depth;
@@ -30,6 +31,6 @@ struct Param {
 
 void parse(int argc, char *argv[], struct Param *param);
 
-void export_param(struct Param param, char filename[]);
+void export_param(struct Param param, const char filename[]);
 
 void cd_to_root_dir(char *arg0);

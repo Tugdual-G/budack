@@ -8,9 +8,14 @@
 #include <unistd.h>
 
 #define PI 3.141592654
+
+// A define an area of reference to compute the density
+// of points.
 const long int A = 9;
 
 double gaussrand(double dx) {
+  // generate a random double.
+  // Gaussian distribution.
   static double U, V;
   static int phase = 0;
   double Z;
@@ -28,6 +33,7 @@ double gaussrand(double dx) {
 }
 
 double randomfloat(double min, double max) {
+  // Uniform distribution.
   double r, range = max - min;
   r = (double)rand() / (double)(RAND_MAX);
   r = min + r * range;
@@ -39,25 +45,47 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
                   unsigned int *restrict M_traj1,
                   unsigned int *restrict M_traj2, float D, int maxit, int minit,
                   double *restrict starting_pts, unsigned int length_strt) {
-  // Initialisation
+  // This where the trajectories are computed. Tree ranges of escape times are
+  // used for rgb.
+  // M_traj0 store the lowest escape time range of trajectories, and M_traj2 the
+  // highest.
+
+  // For parallel processing
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  // Locating the points in space
+  // y for imaginary points
+  // dx is the step of the grid
   double dx, x, y, x0, y0, x2, y2;
 
-  // ntraj is the nuber of trajectories.
-  // it is the number of iteration for a trajectory.
+  // - itraj : number of trajectories satisfying the
+  //           higgher minimal escape time.
+  // - it : number of iteration for one trajectory.
   long unsigned int it = 0, itraj = 0;
+
+  // - npts : total numbers of points visited for
+  //          the higgest escape time range.
   long long unsigned int npts = 0;
+
+  // ij : indexes of the visited points in the array.
   unsigned int ij[maxit * 2 + 1], i;
   char diverge = 0;
+
+  // Current density.
   float current_D = 0;
+
+  // Definition of the 3 ranges of escape time,
   int maxit0 = minit + (maxit - minit) / 3.0,
       maxit1 = minit + 2 * (maxit - minit) / 3.0;
+
+  // To obtain an uniform density of points for each ranges, we fix some ratios.
   unsigned char n0, n1;
   unsigned char n0_max = maxit / maxit0, n1_max = maxit / maxit1;
 
   dx = (x_b[1] - x_b[0]) / nx;
   while (current_D < D) {
+    // generate starting points
     y0 = starting_pts[(2 * itraj) % length_strt] + gaussrand(0.01);
     x0 = starting_pts[(2 * itraj + 1) % length_strt] + gaussrand(0.01);
 
@@ -119,8 +147,6 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
   }
   if (rank == 0) {
     printf("\x1B[2K \r");
-    /* printf("\x1B[2K \rPoints per pixel per core %-.4f/%.4f \n", current_D,
-     * D); */
   }
 }
 
@@ -128,8 +154,14 @@ void border(unsigned int depth, long int length_strt,
             double *restrict starting_pts, unsigned char *restrict M,
             unsigned int start, float a0, float b0, double dx,
             unsigned int nx) {
-  // Return the list of the points at the boundary in index coordinates
-  // relative to the subdomain bodaries.
+  // Fill starting_pts with a list of random points at the boundary
+  // of the mandelbrot set, if a file already exist, load them, else,
+  // generate the points with the border_start function and write them
+  // to file. The binary file has the structure [y0, x0, y1, x1, y2, ...]
+  // These points are used later as poles when randomly generating starting
+  // points for the trajectories.
+
+  // For parallel execution
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   int world_size; // number of processes
@@ -141,8 +173,9 @@ void border(unsigned int depth, long int length_strt,
   char filename[100];
   // depth can't be bigger than 10^7.
   char depth_str[10];
-  if (depth > 10000000) {
-    printf("\e[1;31mERROR: \e[0;37mdepth cannot be greater than 10000000 \n");
+  if (depth > 10000000 || depth < 11) {
+    printf("\e[1;31mERROR: \e[0;37mdepth cannot be greater than 10000000 or "
+           "smaller than 11\n");
     MPI_Finalize();
     exit(1);
   }
@@ -173,16 +206,8 @@ void border(unsigned int depth, long int length_strt,
     MPI_Gather(starting_pts, length_strt * 2, MPI_DOUBLE, total_pts,
                length_strt * 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     if (rank == 0) {
-      fp = fopen(filename, "wb");
-      if (fp == NULL) {
-        printf("\e[1;31mERROR: \e[0;37mcannot create %s \n", filename);
-        exit(1);
-      }
-
-      fwrite(total_pts, sizeof(double), world_size * 2 * length_strt, fp);
+      save(filename, total_pts, sizeof(double), world_size * 2 * length_strt);
       free(total_pts);
-      printf(", written border points file \n");
-      fclose(fp);
     }
   } else {
     // If we find the file we load the points.
@@ -195,8 +220,7 @@ void border(unsigned int depth, long int length_strt,
 void border_start(unsigned int depth, double *starting_pts, unsigned char *M,
                   unsigned int start, float a0, float b0, double dx,
                   unsigned int nx) {
-  // Return the list of the points at the boundary in index coordinates
-  // relative to the subdomain bodaries.
+  // Found random points close to the border of the Mdlbrt set
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   double x, y, x0, y0, x2, y2;
@@ -241,7 +265,7 @@ void border_start(unsigned int depth, double *starting_pts, unsigned char *M,
   }
 }
 
-void save(char fname[], void *data, unsigned int size,
+void save(const char fname[], void *data, unsigned int size,
           unsigned int n_elements) {
   FILE *fp = NULL;
   fp = fopen(fname, "wb");
@@ -254,6 +278,8 @@ void save(char fname[], void *data, unsigned int size,
 }
 
 void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B) {
+  // Ensure symetry and add density by adding a mirrored version
+  // of the image to itself.
   unsigned long k;
   unsigned int i, j;
   unsigned int b;
@@ -269,7 +295,7 @@ void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B) {
 }
 
 void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
-                         unsigned char weight, char fname[]) {
+                         unsigned char weight, const char fname[]) {
   unsigned long size = nx * ny;
   unsigned char *B_c = NULL;
   B_c = (unsigned char *)malloc(sizeof(unsigned char) * size);
@@ -299,7 +325,7 @@ void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
 }
 
 void save_uint_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
-                         float gamma, char fname[]) {
+                         float gamma, const char fname[]) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank); // the rank of the process
   unsigned long size = nx * ny;
@@ -332,11 +358,6 @@ void save_uint_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
   free(B_c);
 }
 
-/* struct Param { */
-/*   unsigned int *nx, *ny, *maxit, *minit, *depth; */
-/*   float *D; */
-/* }; */
-
 void parse(int argc, char *argv[], struct Param *param) {
   if (argc > 1) {
     *(*param).nx = atoi(argv[1]);
@@ -346,9 +367,10 @@ void parse(int argc, char *argv[], struct Param *param) {
     *(*param).depth = atoi(argv[5]);
   }
 }
-void export_param(struct Param param, char filename[]) {
+
+void export_param(struct Param param, const char fname[]) {
   FILE *fptr = NULL;
-  fptr = fopen(filename, "w+");
+  fptr = fopen(fname, "w+");
   if (fptr == NULL) {
     printf("\e[1;31mERROR: \e[0;37mcannot create param file \n");
     exit(1);

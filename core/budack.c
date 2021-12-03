@@ -13,20 +13,23 @@ const int e3 = 1000;
 
 #define dirname0 "output/"
 #define dirname1 "output/traj0/"
-char *paramfname = dirname1 "param.txt";
-char *traj0fname = dirname1 "traj0.char";
-char *traj1fname = dirname1 "traj1.char";
-char *traj2fname = dirname1 "traj2.char";
-char *traj0fname_uint = dirname1 "traj0.uint";
-char *traj1fname_uint = dirname1 "traj1.uint";
-char *traj2fname_uint = dirname1 "traj2.uint";
-char *hintsfname = dirname1 "hints.char";
+const char *paramfname = dirname1 "param.txt";
+const char *traj0fname = dirname1 "traj0.char";
+const char *traj1fname = dirname1 "traj1.char";
+const char *traj2fname = dirname1 "traj2.char";
+const char *traj0fname_uint = dirname1 "traj0.uint";
+const char *traj1fname_uint = dirname1 "traj1.uint";
+const char *traj2fname_uint = dirname1 "traj2.uint";
+const char *hintsfname = dirname1 "hints.char";
 
 const unsigned int LENGTH_STRT = 50000;
 
 int main(int argc, char *argv[]) {
 
   // This change the working directory to .../budack/
+  // This is ugly, but seems to work as long as the
+  // interior architecture and location of the executables
+  // is preserved. (need core/ and output/ )
   cd_to_root_dir(argv[0]);
 
   MPI_Init(NULL, NULL); // initialize MPI environment
@@ -68,6 +71,7 @@ int main(int argc, char *argv[]) {
     // during the installation.
     mkdir(dirname0, 0777);
     mkdir(dirname1, 0777);
+
     float max_memory;
     // in bytes
     max_memory = nx * ny * sizeof(unsigned int) * (3 + 3 * world_size) +
