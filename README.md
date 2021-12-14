@@ -18,24 +18,25 @@ This script use ImageMagick to create PNG images and sxiv to open them.
 Editing the script allow to tune the parameters easily.
 
 # Parameters
-The program use an uncommon parameter which greatly change the appearance of the generated images by fixing different depth zones for the starting points.
-The density of points per pixels control the noise of the images. 
+- The program use an uncommon parameter which greatly change the appearance of the generated images by fixing different depth zones for the starting points.
+- The density of points per pixels control the noise of the images. 
 
 You will also find parameters such as the size of the image, the maximum and minimum number of iterations.
+
 The script exe.sh add more details to the function of each parameter in comments.
 
 
 ## Requirements
 - Open-MPI for parallel computing
-- Running the script on 3 cores at least
-    - If you only have one or two available cores, you may have to run the the computation using the oversubscribe option in mpiexec such as (the script *exe.sh* take care of this case),
+- ImageMagick, to create png pictures from the binary files.
  
             mpiexec --oversubscribe -n 3 budack [args]
     
-
 - **Optional**
     - sxiv image viewer
-    - ImageMagick, to create png pictures from the binary files.
+
+**Note**
+ If you only have one or two available cores, you may have to run the computation using the oversubscribe option in mpiexec such as (the script *exe.sh* take care of this case).
      
 ## Computing scheme
 
