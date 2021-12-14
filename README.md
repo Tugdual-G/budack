@@ -17,7 +17,7 @@ The easiest way to run the computation is by using the script *exe.sh* which wil
 This script use ImageMagick to create PNG images and sxiv to open them.
 Editing the script allow to tune the parameters easily.
 
-# Parameters
+### Parameters
 - The program use an uncommon parameter which greatly change the appearance of the generated images by fixing different depth zones for the starting points.
 - The density of points per pixels control the noise of the images. 
 
