@@ -29,15 +29,15 @@ The script exe.sh add more details to the function of each parameter in comments
 ## Requirements
 - Open-MPI for parallel computing
 - ImageMagick, to create png pictures from the binary files.
- 
-            mpiexec --oversubscribe -n 3 budack [args]
-    
+
 - **Optional**
     - sxiv image viewer
 
 **Note**
  If you only have one or two available cores, you may have to run the computation using the oversubscribe option in mpiexec such as (the script *exe.sh* take care of this case).
-     
+      
+            mpiexec --oversubscribe -n 3 budack [args]
+    
 ## Computing scheme
 
 - Generate random points close to the border of the Mandelbrot set.
