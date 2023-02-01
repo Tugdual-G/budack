@@ -382,27 +382,3 @@ void export_param(struct Param param, const char fname[]) {
           *param.depth);
   fclose(fptr);
 }
-
-void cd_to_root_dir(char *arg0) {
-  // This procedure is only here to hide an realy ugly
-  // part of code.
-  char *cwd = NULL;
-  cwd = (char *)malloc(500 * sizeof(char));
-  if (cwd == NULL) {
-    printf("\e[1;31mERROR: \e[0;37mcannot allocate in function "
-           "cd_root_to_dir() \n");
-    exit(1);
-  }
-  strncpy(cwd, arg0, strlen(arg0) - 6 * sizeof(char));
-  char *rightdir = NULL;
-  rightdir = strstr(cwd, "core");
-  if (rightdir == NULL && strlen(cwd) != 0) {
-    printf("\e[1;31mERROR: \e[0;37mcannot determine if in the right "
-           "working directory \n");
-    exit(0);
-  } else if (strlen(cwd) != 0) {
-    chdir(cwd);
-  }
-  chdir("..");
-  free(cwd);
-}
