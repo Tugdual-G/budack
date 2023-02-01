@@ -32,5 +32,3 @@ struct Param {
 void parse(int argc, char *argv[], struct Param *param);
 
 void export_param(struct Param param, const char filename[]);
-
-void cd_to_root_dir(char *arg0);

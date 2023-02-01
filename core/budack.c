@@ -11,8 +11,8 @@
 const int e6 = 1000000;
 const int e3 = 1000;
 
-#define dirname0 "output/"
-#define dirname1 "output/traj0/"
+#define dirname0 "../output/"
+#define dirname1 "../output/traj0/"
 const char *paramfname = dirname1 "param.txt";
 const char *traj0fname = dirname1 "traj0.char";
 const char *traj1fname = dirname1 "traj1.char";
@@ -25,12 +25,6 @@ const char *hintsfname = dirname1 "hints.char";
 const unsigned int LENGTH_STRT = 50000;
 
 int main(int argc, char *argv[]) {
-
-  // This change the working directory to .../budack/
-  // This is ugly, but seems to work as long as the
-  // interior architecture and location of the executables
-  // is preserved. (need core/ and output/ )
-  cd_to_root_dir(argv[0]);
 
   MPI_Init(NULL, NULL); // initialize MPI environment
   int world_size;       // number of processes
