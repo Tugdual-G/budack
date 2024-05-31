@@ -9,6 +9,8 @@ tmp/
 *.png
 *.o
 *.double
+budack
+gamma
 !zoom.png
 !zoom1.png
 !trajhd.png
