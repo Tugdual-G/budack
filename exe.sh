@@ -6,6 +6,12 @@
 # Location of the executable, you shouldn't change this.
 budack=core/budack
 
+if [[ ! -f "${budack}" ]]
+    then
+    cd core/
+    make
+    cd ..
+fi
 # The computation need 3 cores to run properly
 # if les than 3 cores available, we use the oversubscribe option.
 ncores=$(getconf _NPROCESSORS_ONLN)
@@ -63,19 +69,18 @@ printf "%s \n" "${trajdir}"
 printf "Creating gray scale images"
 
 # A grayscale image of the higher escape time points.
-magick convert -size ${nx}x${ny} -depth 8 \
+magick -size ${nx}x${ny} -depth 8 \
      GRAY:"${trajdir}"traj2.char \
       -sigmoidal-contrast 10x0% -rotate 90 "${trajdir}"gray.png
 
 # Here we return an image of the points from where we randomly search
-# magick convert -size ${nx}x${ny} -depth 8 \
+# magick -size ${nx}x${ny} -depth 8 \
 #      GRAY:"${trajdir}"hints.char \
 #       -sigmoidal-contrast 10x0% -rotate 90 "${trajdir}"hints.png
 
 printf "\x1b[2K \rCreating colored images \n"
 # Here we create every possible RGB combinations
 #
-set -o xtrace
 
 magick -size ${nx}x${ny} -depth 8\
     gray:"${trajdir}"traj0.char gray:"${trajdir}"traj1.char gray:"${trajdir}"traj2.char \
@@ -104,5 +109,4 @@ magick -size ${nx}x${ny} -depth 8 \
 printf "\x1b[2K \rOpening images"
 #xdg-open "${trajdir}"rgb[0-5].png "${trajdir}"hints.png "${trajdir}"gray.png
 xdg-open "${trajdir}"rgb0.png
-set +o xtrace
 printf "\x1b[2K \n"
