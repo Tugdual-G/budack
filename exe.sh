@@ -4,8 +4,7 @@
 # This script generate the trajectories and the images.
 
 # Location of the executable, you shouldn't change this.
-scrpt_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-budack="${scrpt_dir}"/core/budack
+budack=core/budack
 
 # The computation need 3 cores to run properly
 # if les than 3 cores available, we use the oversubscribe option.
@@ -19,15 +18,15 @@ fi
 
 # Output of the computation, it is hardcoded in the c program for now
 # you shouldn't change this.
-trajdir0="${scrpt_dir}"/output/traj0/
+trajdir0=output/traj0/
 
 # Output directory of the images, all the data will be moved
 # here (param.txt , traj.char , etc...),
 # you can change the directory if you want:
-trajdir="${scrpt_dir}"/output/myfirstbudack/
+trajdir=output/myfirstbudack/
 
 nx=1000 # Number of pixels in vertical direction
-density=8 # Number of point per pixels, higher = less noise but slower
+density=10 # Number of point per pixels, higher = less noise but slower
 maxit=200 # Maximum number of iterations
 minit=40 # Minimum number of iterations
 
@@ -42,9 +41,9 @@ params_f="${trajdir}"param.txt
 depth=80
 #depth=$(((maxit+minit)/2))
 
-
 # #------------- computing  -------------
-mpiexec $oversub -q "$budack" "$nx" "$maxit" "$minit" "$density" "$depth"
+mpiexec $oversub "$budack" "$nx" "$maxit" "$minit" "$density" "$depth"
+
 
 if [[ ! -d "${trajdir}" ]]
    then
@@ -66,40 +65,44 @@ printf "Creating gray scale images"
 # A grayscale image of the higher escape time points.
 magick convert -size ${nx}x${ny} -depth 8 \
      GRAY:"${trajdir}"traj2.char \
-      -rotate 90 "${trajdir}"gray.png
+      -sigmoidal-contrast 10x0% -rotate 90 "${trajdir}"gray.png
 
 # Here we return an image of the points from where we randomly search
-magick convert -size ${nx}x${ny} -depth 8 \
-     GRAY:"${trajdir}"hints.char \
-      -rotate 90 "${trajdir}"hints.png
+# magick convert -size ${nx}x${ny} -depth 8 \
+#      GRAY:"${trajdir}"hints.char \
+#       -sigmoidal-contrast 10x0% -rotate 90 "${trajdir}"hints.png
 
-printf "\x1b[2K \rCreating colored images"
+printf "\x1b[2K \rCreating colored images \n"
 # Here we create every possible RGB combinations
+#
+set -o xtrace
 
-magick convert -size ${nx}x${ny} -depth 8 \
+magick -size ${nx}x${ny} -depth 8\
     gray:"${trajdir}"traj0.char gray:"${trajdir}"traj1.char gray:"${trajdir}"traj2.char \
-    -channel RGB -combine -noise 1 -rotate 90 "${trajdir}"rgb0.png
+    -channel RGB -combine -sigmoidal-contrast 10x5% -rotate 90 "${trajdir}"rgb0.png
 
-magick convert -size ${nx}x${ny} -depth 8 \
+magick -size ${nx}x${ny} -depth 8 \
     gray:"${trajdir}"traj0.char gray:"${trajdir}"traj2.char gray:"${trajdir}"traj1.char \
-    -channel RGB -combine -rotate 90 "${trajdir}"rgb1.png
+    -channel RGB -combine -sigmoidal-contrast 10x5% -rotate 90 "${trajdir}"rgb1.png
 
-magick convert -size ${nx}x${ny} -depth 8 \
+magick -size ${nx}x${ny} -depth 8 \
     gray:"${trajdir}"traj1.char gray:"${trajdir}"traj0.char gray:"${trajdir}"traj2.char \
-    -channel RGB -combine -rotate 90 "${trajdir}"rgb2.png
+    -channel RGB -combine -sigmoidal-contrast 10x5% -rotate 90 "${trajdir}"rgb2.png
 
-magick convert -size ${nx}x${ny} -depth 8 \
+magick -size ${nx}x${ny} -depth 8 \
     gray:"${trajdir}"traj1.char gray:"${trajdir}"traj2.char gray:"${trajdir}"traj0.char \
-    -channel RGB -combine -rotate 90 "${trajdir}"rgb3.png
+    -channel RGB -combine -sigmoidal-contrast 10x5% -rotate 90 "${trajdir}"rgb3.png
 
-magick convert -size ${nx}x${ny} -depth 8 \
+magick -size ${nx}x${ny} -depth 8 \
     gray:"${trajdir}"traj2.char gray:"${trajdir}"traj0.char gray:"${trajdir}"traj1.char \
-    -channel RGB -combine -rotate 90 "${trajdir}"rgb4.png
+    -channel RGB -combine -sigmoidal-contrast 10x5% -rotate 90 "${trajdir}"rgb4.png
 
-magick convert -size ${nx}x${ny} -depth 8 \
+magick -size ${nx}x${ny} -depth 8 \
     gray:"${trajdir}"traj2.char gray:"${trajdir}"traj1.char gray:"${trajdir}"traj0.char \
-    -channel RGB -combine -rotate 90 "${trajdir}"rgb5.png
+    -channel RGB -combine -sigmoidal-contrast 10x5% -rotate 90 "${trajdir}"rgb5.png
 
 printf "\x1b[2K \rOpening images"
-sxiv "${trajdir}"rgb[0-5].png "${trajdir}"hints.png "${trajdir}"gray.png
+#xdg-open "${trajdir}"rgb[0-5].png "${trajdir}"hints.png "${trajdir}"gray.png
+xdg-open "${trajdir}"rgb0.png
+set +o xtrace
 printf "\x1b[2K \n"

@@ -6,7 +6,9 @@ tmp/
 *.egg
 *.npy
 *.jpg
+*.png
 *.o
+*.double
 !zoom.png
 !zoom1.png
 !trajhd.png

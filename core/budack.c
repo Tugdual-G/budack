@@ -11,8 +11,8 @@
 const int e6 = 1000000;
 const int e3 = 1000;
 
-#define dirname0 "../output/"
-#define dirname1 "../output/traj0/"
+#define dirname0 "output/"
+#define dirname1 "output/traj0/"
 const char *paramfname = dirname1 "param.txt";
 const char *traj0fname = dirname1 "traj0.char";
 const char *traj1fname = dirname1 "traj1.char";
@@ -61,6 +61,7 @@ int main(int argc, char *argv[]) {
   b[1] = ((int)ny / 2) * dx;
 
   if (rank == 0) {
+    printf("Number of cores : %i \n", world_size);
     // FIXME The creation of the directories should be done
     // during the installation.
     mkdir(dirname0, 0777);

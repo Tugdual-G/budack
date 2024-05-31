@@ -319,6 +319,9 @@ void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
 
   FILE *fptr;
   fptr = fopen(fname, "wb");
+  if (fptr == NULL) {
+	  printf("ERROR in save_char_grayscale, could not create file %s\n",fname);
+  }
   fwrite(B_c, sizeof(unsigned char), size, fptr);
   fclose(fptr);
   free(B_c);
