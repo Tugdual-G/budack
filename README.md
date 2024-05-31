@@ -14,7 +14,7 @@ Different combinations of colors will be generated.
 It takes less than half a second to compute the points on an 3GHz 4 core intel i5. 
 
 The easiest way to run the computation is by using the script *exe.sh* which will also generate images.
-This script use ImageMagick to create PNG images and sxiv to open them.
+This script use ImageMagick to create PNG images and xdg-open.
 Editing the script allow to tune the parameters easily.
 
 ### Parameters
@@ -29,9 +29,6 @@ The script exe.sh add more details to the function of each parameter in comments
 ## Requirements
 - Open-MPI for parallel computing
 - ImageMagick, to create png pictures from the binary files.
-
-- **Optional**
-    - sxiv image viewer
 
 **Note**
  If you only have one or two available cores, you may have to run the computation using the oversubscribe option in mpiexec such as (the script *exe.sh* take care of this case).
@@ -55,8 +52,5 @@ Because of the lazy memory allocation by Linux kernel, the memory usage will sta
 - Use a gamma function on the 16 bits grayscale to enhance smoothly the trajectories, which are then turned to 8 bits grayscale to generate images from 3x8 bites rgb channels. See the script *gamma.sh* This script is mostly needed for high resolution images. 
 - The gamma function can also help distinguish the contribution of the different RGB channels.
 
-**Snapshots:**
-![alt text](images_exemples/colors.png)
 
 
-![alt text](images_exemples/zoom.png)

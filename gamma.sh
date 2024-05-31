@@ -4,20 +4,19 @@
 
 
 # Location of the executable, you shouldn't change this.
-scrpt_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-exegamma="${scrpt_dir}"/core/gamma
+exegamma=core/gamma
 
 # Output of the computation, it is hardcoded in the c program for now
 # you shouldn't change this.
-trajdir0="${scrpt_dir}"/output/traj0/
+trajdir0=output/traj0/
 
 # Output directory of the images, all the data will be moved
 # here (param.txt , traj.char , etc...),
 # you can change the name of the dir if you want:
-trajdir="${scrpt_dir}"/output/myfirstbudack/
+trajdir=output/myfirstbudack/
 
 # Parameters file
-params_f="${trajdir}"param.txt
+params_f=${trajdir}"param.txt
 # retrieving ny and nx from parameters file
 nx=$(grep "nx" "${params_f}" | awk -F "=" '{print $2}')
 ny=$(grep "ny" "${params_f}" | awk -F "=" '{print $2}')
@@ -35,11 +34,11 @@ if [[ -f "${trajdir}"traj0gamma.char ]]
     rm "${trajdir}"traj2gamma.char
 fi
 
-mpiexec -q -n 3 "${exegamma}" ${nx} ${ny} 1.8
+mpiexec -n 3 "${exegamma}" ${nx} ${ny} 1.8
 
 printf "\x1b[2K \rCreating colored images"
 
-magick convert -size "${nx}x${ny}" -depth 8 \
+magick -size "${nx}x${ny}" -depth 8 \
     gray:"${trajdir}"traj0gamma.char gray:"${trajdir}"traj2gamma.char gray:"${trajdir}"traj1gamma.char \
     -channel RGB -combine -rotate 90 "${trajdir}"rgb1gamma.png
 
