@@ -33,8 +33,11 @@ trajdir=output/myfirstbudack/
 
 nx=1000 # Number of pixels in vertical direction
 density=10 # Number of point per pixels, higher = less noise but slower
-maxit=200 # Maximum number of iterations
+maxit=400 # Maximum number of iterations
 minit=40 # Minimum number of iterations
+
+# maxit=1000 # Maximum number of iterations
+# minit=50 # Minimum number of iterations
 
 # Parameters file
 params_f="${trajdir}"param.txt
@@ -82,29 +85,31 @@ printf "\x1b[2K \rCreating colored images \n"
 # Here we create every possible RGB combinations
 #
 
+contrast="-sigmoidal-contrast 14x5%"
+
 magick -size ${nx}x${ny} -depth 8\
     gray:"${trajdir}"traj0.char gray:"${trajdir}"traj1.char gray:"${trajdir}"traj2.char \
-    -channel RGB -combine -sigmoidal-contrast 10x5% -rotate 90 "${trajdir}"rgb0.png
+    -channel RGB -combine ${contrast} -rotate 90 "${trajdir}"rgb0.png
 
 magick -size ${nx}x${ny} -depth 8 \
     gray:"${trajdir}"traj0.char gray:"${trajdir}"traj2.char gray:"${trajdir}"traj1.char \
-    -channel RGB -combine -sigmoidal-contrast 10x5% -rotate 90 "${trajdir}"rgb1.png
+    -channel RGB -combine ${contrast} -rotate 90 "${trajdir}"rgb1.png
 
 magick -size ${nx}x${ny} -depth 8 \
     gray:"${trajdir}"traj1.char gray:"${trajdir}"traj0.char gray:"${trajdir}"traj2.char \
-    -channel RGB -combine -sigmoidal-contrast 10x5% -rotate 90 "${trajdir}"rgb2.png
+    -channel RGB -combine ${contrast} -rotate 90 "${trajdir}"rgb2.png
 
 magick -size ${nx}x${ny} -depth 8 \
     gray:"${trajdir}"traj1.char gray:"${trajdir}"traj2.char gray:"${trajdir}"traj0.char \
-    -channel RGB -combine -sigmoidal-contrast 10x5% -rotate 90 "${trajdir}"rgb3.png
+    -channel RGB -combine ${contrast} -rotate 90 "${trajdir}"rgb3.png
 
 magick -size ${nx}x${ny} -depth 8 \
     gray:"${trajdir}"traj2.char gray:"${trajdir}"traj0.char gray:"${trajdir}"traj1.char \
-    -channel RGB -combine -sigmoidal-contrast 10x5% -rotate 90 "${trajdir}"rgb4.png
+    -channel RGB -combine ${contrast} -rotate 90 "${trajdir}"rgb4.png
 
 magick -size ${nx}x${ny} -depth 8 \
     gray:"${trajdir}"traj2.char gray:"${trajdir}"traj1.char gray:"${trajdir}"traj0.char \
-    -channel RGB -combine -sigmoidal-contrast 10x5% -rotate 90 "${trajdir}"rgb5.png
+    -channel RGB -combine ${contrast} -rotate 90 "${trajdir}"rgb5.png
 
 printf "\x1b[2K \rOpening images"
 #xdg-open "${trajdir}"rgb[0-5].png "${trajdir}"hints.png "${trajdir}"gray.png

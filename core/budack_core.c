@@ -79,10 +79,6 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
   int maxit0 = minit + (maxit - minit) / 3.0,
       maxit1 = minit + 2 * (maxit - minit) / 3.0;
 
-  // To obtain an uniform density of points for each ranges, we fix some ratios.
-  unsigned char n0, n1;
-  unsigned char n0_max = maxit / maxit0, n1_max = maxit / maxit1;
-
   dx = (x_b[1] - x_b[0]) / nx;
   while (current_D < D) {
     // generate starting points
@@ -101,8 +97,6 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
 
     while (it < maxit && diverge == 0) {
       // Storing the trajectories
-      n0 = 0;
-      n1 = 0;
       y = 2 * x * y + y0;
       x = x2 - y2 + x0;
       x2 = x * x;
@@ -115,15 +109,13 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
       }
     }
     if (diverge == 1 && it > minit) {
-      if (it < maxit0 && n0 < n0_max) {
-        n0++;
+      if (it < maxit0) {
         for (i = 0; i < it; i += 2) {
           if (ij[i] >= 0 && ij[i] < ny && ij[i + 1] >= 0 && ij[i + 1] < nx) {
             *(M_traj0 + nx * ij[i] + ij[i + 1]) += 1;
           }
         }
-      } else if (it < maxit1 && n1 < n1_max) {
-        n1++;
+      } else if (it < maxit1) {
         for (i = 0; i < it; i += 2) {
           if (ij[i] >= 0 && ij[i] < ny && ij[i + 1] >= 0 && ij[i + 1] < nx) {
             *(M_traj1 + nx * ij[i] + ij[i + 1]) += 1;
@@ -139,15 +131,17 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
         npts += it;
         current_D = (npts * dx * dx) / A;
       }
-      if (rank == 0 && itraj % 10 == 0) {
-        printf("\rPoints per pixel per core %-.4f/%.4f ", current_D, D);
-        fflush(stdout);
-      }
+      /* if (rank == 0 && itraj % 500 == 0) { */
+      /*   printf("\r" */
+      /*          "----------------Points per pixel per core %-.4f/%.4f", */
+      /*          current_D, D); */
+      /*   fflush(stdout); */
+      /* } */
     }
   }
-  if (rank == 0) {
-    printf("\x1B[2K \r");
-  }
+  /* if (rank == 0) { */
+  /*   printf("\x1B[2K \r\n"); */
+  /* } */
 }
 
 void border(unsigned int depth, long int length_strt,
@@ -320,7 +314,7 @@ void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
   FILE *fptr;
   fptr = fopen(fname, "wb");
   if (fptr == NULL) {
-	  printf("ERROR in save_char_grayscale, could not create file %s\n",fname);
+    printf("ERROR in save_char_grayscale, could not create file %s\n", fname);
   }
   fwrite(B_c, sizeof(unsigned char), size, fptr);
   fclose(fptr);

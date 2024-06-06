@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # This script apply gamma transform to enhance the images
+# Usefull only for big images with fewer point density
 
 
 # Location of the executable, you shouldn't change this.
@@ -8,41 +9,40 @@ exegamma=core/gamma
 
 # Output of the computation, it is hardcoded in the c program for now
 # you shouldn't change this.
-trajdir0=output/traj0/
+inputdir=output/traj0/
 
 # Output directory of the images, all the data will be moved
 # here (param.txt , traj.char , etc...),
 # you can change the name of the dir if you want:
-trajdir=output/myfirstbudack/
+outputdir=output/myfirstbudack/
 
 # Parameters file
-params_f=${trajdir}"param.txt
+params_f=${outputdir}"param.txt"
 # retrieving ny and nx from parameters file
 nx=$(grep "nx" "${params_f}" | awk -F "=" '{print $2}')
 ny=$(grep "ny" "${params_f}" | awk -F "=" '{print $2}')
 
 printf "images output directory : \n"
-printf "%s \n" "${trajdir}"
+printf "%s \n" "${outputdir}"
 
-printf "Applying gamma transform"
-cd "${trajdir}" || (echo cannot change ; $(exit))
+printf "Applying gamma transform \n"
 
-if [[ -f "${trajdir}"traj0gamma.char ]]
+if [[ -f "${outputdir}"traj0gamma.char ]]
    then
-    rm "${trajdir}"traj0gamma.char
-    rm "${trajdir}"traj1gamma.char
-    rm "${trajdir}"traj2gamma.char
+    rm "${outputdir}"traj0gamma.char
+    rm "${outputdir}"traj1gamma.char
+    rm "${outputdir}"traj2gamma.char
 fi
 
-mpiexec -n 3 "${exegamma}" ${nx} ${ny} 1.8
+mpiexec -n 3 "${exegamma}" ${nx} ${ny} 2 "${inputdir}" "${outputdir}" 1
+echo "$nx" , "$ny"
 
-printf "\x1b[2K \rCreating colored images"
+magick -size "$nx"x"$ny" -depth 8\
+    gray:"${outputdir}"traj0gamma.char gray:"${outputdir}"traj1gamma.char gray:"${outputdir}"traj2gamma.char \
+    -channel RGB -combine -sigmoidal-contrast 5x50% -rotate 90 "${outputdir}"rgb0gamma.png
 
-magick -size "${nx}x${ny}" -depth 8 \
-    gray:"${trajdir}"traj0gamma.char gray:"${trajdir}"traj2gamma.char gray:"${trajdir}"traj1gamma.char \
-    -channel RGB -combine -rotate 90 "${trajdir}"rgb1gamma.png
+# magick -size "$nx"x"$ny" -depth 8\
+#     gray:"${outputdir}"traj0gamma.char gray:"${outputdir}"traj1gamma.char gray:"${outputdir}"traj2gamma.char \
+#     -channel RGB -combine -rotate 90 "${outputdir}"rgb0gamma.png
 
-printf "\x1b[2K \rOpening images"
-# magick convert "${trajdir}"rgb0gamma.png -crop 1920x1080+3200+2200 "${trajdir}"croppedg0.jpg
-sxiv "${trajdir}"*gamma.png
-printf "\x1b[2K \n"
+nsxiv "${outputdir}"rgb0*.png
