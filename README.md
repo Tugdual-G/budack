@@ -10,11 +10,8 @@ Just try the default parameters by running (see requirements),
 
     ./exe.sh
 
-Different combinations of colors will be generated.
-It takes less than half a second to compute the points on an 3GHz 4 core intel i5. 
-
-The easiest way to run the computation is by using the script *exe.sh* which will also generate images.
-This script use ImageMagick to create PNG images and xdg-open.
+The main program create a 16 bits per channel TIFF image to favor further processing.
+ImageMagick is used to apply a sigmoidal contrast to the image, but this can be done with any editing software.
 Editing the script allow to tune the parameters easily.
 
 ### Parameters
@@ -28,7 +25,10 @@ The script exe.sh add more details to the function of each parameter in comments
 
 ## Requirements
 - Open-MPI for parallel computing
-- ImageMagick, to create png pictures from the binary files.
+- libtiff c library
+
+**Optional**
+- ImageMagick, to process and enhance the TIFF files.
 
 **Note**
  If you only have one or two available cores, you may have to run the computation using the oversubscribe option in mpiexec such as (the script *exe.sh* take care of this case).
@@ -42,13 +42,13 @@ The script exe.sh add more details to the function of each parameter in comments
     The positions of the first points attract the probability distribution of the next points toward them. 
 - Slightly offset these starting points randomly by a binomial distribution.
 - Compute the trajectories until sufficient density (points per pixel) is reached.
-- The trajectories are written to disk as 8 bits grayscale binaries and 16 bits grayscale binaries without any header (i.e. 2 files are written to disk for each color channel : red, green and blue). The parameters are written to disk too as 'param.txt' . 
+- An output .tiff image is created. The parameters are written to disk too as 'param.txt'. 
 
 **Note**   
 Because of the lazy memory allocation by Linux kernel, the memory usage will start very low and grow as new pixels are visited by the trajectories. To avoid any surprise, the total allocated size for the arrays is shown at the beginning of the program, in practice the ram usage will be lower than the estimation.
 
 ## Images processing
-- Use ImageMagick to generate images from 8 bites grayscale.
+- Use ImageMagick to process the images.
 - Use a gamma function on the 16 bits grayscale to enhance smoothly the trajectories, which are then turned to 8 bits grayscale to generate images from 3x8 bites rgb channels. See the script *gamma.sh* This script is mostly needed for high resolution images. 
 - The gamma function can also help distinguish the contribution of the different RGB channels.
 
