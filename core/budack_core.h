@@ -8,17 +8,17 @@
 
 #include <stdint.h>
 
-void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
-                  unsigned int *M_traj0, unsigned int *M_traj1,
-                  unsigned int *M_traj2, float D, int maxit, int minit,
+void trajectories(unsigned int nx, unsigned int ny, double x_b[2],
+                  double y_b[2], unsigned int *M_traj0, unsigned int *M_traj1,
+                  unsigned int *M_traj2, double D, int maxit, int minit,
                   double *starting_pts, unsigned int length_strt);
 
 void border(unsigned int depth, long int length_strt, double *starting_pts,
-            uint8_t *M, unsigned int start, float a0, float b0, double dx,
+            uint8_t *M, unsigned int start, double a0, double b0, double dx,
             unsigned int nx);
 
 void border_start(unsigned int depth, double *starting_pts, uint8_t *M,
-                  unsigned int start, float a0, float b0, double dx,
+                  unsigned int start, double a0, double b0, double dx,
                   unsigned int nx);
 
 void save(const char fname[], void *data, unsigned int size,
@@ -26,15 +26,9 @@ void save(const char fname[], void *data, unsigned int size,
 
 void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B);
 
-void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
-                         unsigned char weight, const char fname[]);
-
-void save_uint_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
-                         float gamma, const char fname[]);
-
 struct Param {
   unsigned int *nx, *ny, *maxit, *minit, *depth;
-  float *D;
+  double *D;
   char *output_dir;
 };
 

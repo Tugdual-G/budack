@@ -51,7 +51,8 @@ int write_tiff_16bitsRGB(const char *fname, uint16_t *R, uint16_t *G,
   TIFFClose(tif);
   free(RGB);
 
-  printf("16 bits per channel RGB TIFF file created successfully, %s\n", fname);
+  printf("\n16 bits per channel RGB TIFF file created successfully, %s\n",
+         fname);
 
   return 0;
 }
@@ -92,11 +93,11 @@ int write_tiff_16bits_grayscale(const char *fname, uint8_t *gray_scale,
 
   // Close the TIFF file
   TIFFClose(tif);
-  printf("16 bits per channel RGB TIFF file created successfully, %s\n", fname);
+  printf("\n16 bits grayscale TIFF file created successfully, %s\n", fname);
   return 0;
 }
 
-void normalize_uint_to_16bits(unsigned int *in, uint16_t *out, size_t n) {
+void normalize_32_to_16bits(uint32_t *in, uint16_t *out, size_t n) {
   double max = 0;
   for (size_t k = 0; k < n; k++) {
     if (*(in + k) > max) {

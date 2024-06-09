@@ -5,17 +5,18 @@
 
 nx=1000 # Number of pixels in vertical direction
 density=10 # Number of point per pixels, higher = less noise but slower
-maxit=300 # Maximum number of iterations
-minit=60 # Minimum number of iterations
+maxit=400 # Maximum number of iterations
+minit=80 # Minimum number of iterations
 
 
-PNG_IMAGE_NAME=nx"${nx}"_minit"${minit}"_maxit"${maxit}".png
+# PNG_IMAGE_NAME=nx"${nx}"_minit"${minit}"_maxit"${maxit}".png
+PNG_IMAGE_NAME=image.png
 
 # Output of the computation
 RAW_OUTPUT_DIR=/tmp/budack/
 
 # Output directory of the enhanced images
-ENHANCED_OUTPUT_DIR=output/
+ENHANCED_OUTPUT_DIR=/tmp/
 
 
 # This will change greatly the apparence of the images,
@@ -55,7 +56,6 @@ if [[ ! -d "${ENHANCED_OUTPUT_DIR}" ]]
     mkdir "${ENHANCED_OUTPUT_DIR}"
 fi
 
-
 # #------------- computing  -------------
 mpiexec $oversub "$budack" "$nx" "$maxit" "$minit" "$density" "$depth" "$RAW_OUTPUT_DIR" &
 
@@ -76,7 +76,7 @@ do
 done
 wait
 
-contrast="-sigmoidal-contrast 20x5%"
+contrast="-sigmoidal-contrast 15x10%"
 magick "${RAW_OUTPUT_DIR}"image.tiff ${contrast} -rotate 90 "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
 echo "written enhanced image (sigmoidal contrast) ," "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
 nsxiv "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"

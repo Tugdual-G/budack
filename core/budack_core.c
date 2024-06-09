@@ -13,7 +13,7 @@
 
 // A define an area of reference to compute the density
 // of points.
-const long int A = 9;
+#define AREA 9.0
 
 double gaussrand(double dx) {
   // generate a random double.
@@ -34,7 +34,7 @@ double gaussrand(double dx) {
   return Z * dx;
 }
 
-double randomfloat(double min, double max) {
+double randomdouble(double min, double max) {
   // Uniform distribution.
   double r, range = max - min;
   r = (double)rand() / (double)(RAND_MAX);
@@ -42,11 +42,12 @@ double randomfloat(double min, double max) {
   return r;
 }
 
-void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
-                  unsigned int *restrict M_traj0,
+void trajectories(unsigned int nx, unsigned int ny, double x_b[2],
+                  double y_b[2], unsigned int *restrict M_traj0,
                   unsigned int *restrict M_traj1,
-                  unsigned int *restrict M_traj2, float D, int maxit, int minit,
-                  double *restrict starting_pts, unsigned int length_strt) {
+                  unsigned int *restrict M_traj2, double D, int maxit,
+                  int minit, double *restrict starting_pts,
+                  unsigned int length_strt) {
   // This where the trajectories are computed. Tree ranges of escape times are
   // used for rgb.
   // M_traj0 store the lowest escape time range of trajectories, and M_traj2 the
@@ -64,14 +65,15 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
   // - itraj : number of trajectories satisfying the
   //           higgher minimal escape time.
   // - it : number of iteration for one trajectory.
-  long unsigned int it = 0, itraj = 0;
+  size_t itraj = 0;
+  unsigned int it = 0, i = 0;
 
   // - npts : total numbers of points visited for
   //          the higgest escape time range.
-  long long unsigned int npts = 0;
+  size_t npts = 0;
 
   // ij : indexes of the visited points in the array.
-  unsigned int ij[maxit * 2 + 1], i;
+  unsigned int ij[maxit * 2 + 1];
   char diverge = 0;
 
   // Current density.
@@ -86,7 +88,7 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
       maxit1 = minit + 2 * (maxit - minit) / 3.0;
 
   dx = (x_b[1] - x_b[0]) / nx;
-  while (density < 1) {
+  while (density < 1.0) {
     // generate starting points
     y0 = starting_pts[(2 * itraj) % length_strt] + gaussrand(0.01);
     x0 = starting_pts[(2 * itraj + 1) % length_strt] + gaussrand(0.01);
@@ -98,30 +100,30 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
     y2 = y * y;
     diverge = 0;
 
-    ij[it * 2] = (y - y_b[0]) / dx;
-    ij[it * 2 + 1] = (x - x_b[0]) / dx;
+    ij[0] = (y - y_b[0]) / dx;
+    ij[1] = (x - x_b[0]) / dx;
 
-    while (it < maxit && diverge == 0) {
+    while (it < (2 * maxit) && diverge == 0) {
       // Storing the trajectories
       y = 2 * x * y + y0;
       x = x2 - y2 + x0;
       x2 = x * x;
       y2 = y * y;
-      it++;
-      ij[it * 2] = (y - y_b[0]) / dx;
-      ij[it * 2 + 1] = (x - x_b[0]) / dx;
+      it += 2;
+      ij[it] = (y - y_b[0]) / dx;
+      ij[it + 1] = (x - x_b[0]) / dx;
       if (x2 + y2 > 4) {
         diverge = 1;
       }
     }
-    if (diverge == 1 && it > minit) {
-      if (it < maxit0) {
+    if (diverge == 1 && (it / 2) > minit) {
+      if ((it / 2) < maxit0) {
         for (i = 0; i < it; i += 2) {
           if (ij[i] >= 0 && ij[i] < ny && ij[i + 1] >= 0 && ij[i + 1] < nx) {
             *(M_traj0 + nx * ij[i] + ij[i + 1]) += 1;
           }
         }
-      } else if (it < maxit1) {
+      } else if ((it / 2) < maxit1) {
         for (i = 0; i < it; i += 2) {
           if (ij[i] >= 0 && ij[i] < ny && ij[i + 1] >= 0 && ij[i + 1] < nx) {
             *(M_traj1 + nx * ij[i] + ij[i + 1]) += 1;
@@ -133,12 +135,12 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
             *(M_traj2 + nx * ij[i] + ij[i + 1]) += 1;
           }
         }
+
         itraj++;
-        npts += it;
-        density = (npts * dx * dx) / (A * D);
+        npts += (it / 2);
+        density = (npts * dx * dx) / (AREA * D);
         if (rank == 0 && (density - density_tmp) > 0.01) {
           write_progress(density);
-          /*   fflush(stdout); */
           density_tmp = density;
         }
       }
@@ -146,13 +148,12 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
   }
   if (rank == 0) {
     write_progress(-1.0);
-    /* printf("\x1B[2K \r\n"); */
   }
 }
 
 void border(unsigned int depth, long int length_strt,
             double *restrict starting_pts, uint8_t *restrict M,
-            unsigned int start, float a0, float b0, double dx,
+            unsigned int start, double a0, double b0, double dx,
             unsigned int nx) {
   // Fill starting_pts with a list of random points at the boundary
   // of the mandelbrot set, if a file already exist, load them, else,
@@ -218,7 +219,7 @@ void border(unsigned int depth, long int length_strt,
 }
 
 void border_start(unsigned int depth, double *starting_pts, uint8_t *M,
-                  unsigned int start, float a0, float b0, double dx,
+                  unsigned int start, double a0, double b0, double dx,
                   unsigned int nx) {
   // Found random points close to the border of the Mdlbrt set
   int rank; // the rank of the process
@@ -232,8 +233,8 @@ void border_start(unsigned int depth, double *starting_pts, uint8_t *M,
   while (k < start) {
     it = 0;
 
-    x0 = randomfloat(-2, 0.5);
-    y0 = randomfloat(0, 1.5);
+    x0 = randomdouble(-2, 0.5);
+    y0 = randomdouble(0, 1.5);
 
     x = x0;
     y = y0;
@@ -294,79 +295,12 @@ void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B) {
   }
 }
 
-void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
-                         unsigned char weight, const char fname[]) {
-  unsigned long size = nx * ny;
-  unsigned char *B_c = NULL;
-  B_c = (unsigned char *)malloc(sizeof(unsigned char) * size);
-  if (B_c == NULL) {
-    printf(
-        "\e[1;31mERROR: \e[0;37mno memory allocated to save char grayscale \n");
-    exit(1);
-  }
-
-  unsigned long k;
-  unsigned int bmax = 0;
-
-  for (k = 0; k < size; k++) {
-    if (*(B + k) > bmax) {
-      bmax = *(B + k);
-    }
-  }
-  for (k = 0; k < size; k++) {
-    *(B_c + k) = (double)*(B + k) * 255 / bmax;
-  }
-
-  FILE *fptr;
-  fptr = fopen(fname, "wb");
-  if (fptr == NULL) {
-    printf("ERROR in save_char_grayscale, could not create file %s\n", fname);
-  }
-  fwrite(B_c, sizeof(unsigned char), size, fptr);
-  fclose(fptr);
-  free(B_c);
-}
-
-void save_uint_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
-                         float gamma, const char fname[]) {
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank); // the rank of the process
-  unsigned long size = nx * ny;
-  unsigned char *B_c = NULL;
-  B_c = (unsigned char *)malloc(sizeof(unsigned char) * size);
-  if (B_c == NULL) {
-    printf(
-        "\e[1;31mERROR: \e[0;37mno memory allocated to save uint grayscale \n");
-    exit(1);
-  }
-
-  unsigned long k;
-  float bmax = 0;
-
-  for (k = 0; k < size; k++) {
-    if (*(B + k) > bmax) {
-      bmax = *(B + k);
-    }
-  }
-  bmax = pow((float)bmax, 1 / gamma);
-
-  for (k = 0; k < size; k++) {
-    *(B_c + k) = pow((float)*(B + k), 1 / gamma) * 255 / bmax;
-  }
-
-  FILE *fptr;
-  fptr = fopen(fname, "wb");
-  fwrite(B_c, sizeof(unsigned char), size, fptr);
-  fclose(fptr);
-  free(B_c);
-}
-
 void parse(int argc, char *argv[], struct Param *param) {
   if (argc > 1) {
     *(*param).nx = atoi(argv[1]);
     *(*param).maxit = atoi(argv[2]);
     *(*param).minit = atoi(argv[3]);
-    *(*param).D = (float)atoi(argv[4]);
+    *(*param).D = (double)atoi(argv[4]);
     *(*param).depth = atoi(argv[5]);
     (*param).output_dir = argv[6];
   }
@@ -380,7 +314,6 @@ void parse(int argc, char *argv[], struct Param *param) {
 void export_param(struct Param param) {
   FILE *fptr = NULL;
   char filename[MAX_PATH_LENGTH + 21] = {'\0'};
-
   unsigned outdir_str_len = strlen(param.output_dir);
   strncpy(filename, param.output_dir, MAX_PATH_LENGTH);
   if (param.output_dir[outdir_str_len - 1] != '/') {
@@ -403,15 +336,16 @@ void export_param(struct Param param) {
 }
 
 void write_progress(double density) {
-
   FILE *fptr = NULL;
   fptr = fopen("/tmp/progress", "w+");
   if (fptr == NULL) {
     printf("\e[1;31mERROR: \e[0;37mcannot create progress file \n");
     exit(1);
   }
-  if (density < 0) {
+  if (density < -1) {
     fprintf(fptr, "0");
+  } else if (density < 0) {
+    fprintf(fptr, "gathering results ...");
   } else {
     fprintf(fptr, "points density %-.4f/100", 100 * density);
   }

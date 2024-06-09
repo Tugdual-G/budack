@@ -10,6 +10,8 @@ tmp/
 *.tiff
 *.o
 *.double
+*.sh
+!exe.sh
 images.sh
 budack
 gamma
