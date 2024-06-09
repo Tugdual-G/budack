@@ -7,8 +7,10 @@ tmp/
 *.npy
 *.jpg
 *.png
+*.tiff
 *.o
 *.double
+images.sh
 budack
 gamma
 !zoom.png

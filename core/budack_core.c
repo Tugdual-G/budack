@@ -73,14 +73,18 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
   char diverge = 0;
 
   // Current density.
-  float current_D = 0;
+  double density = 0.0;
+  double density_tmp = -1.0;
+  if (rank == 0) {
+    write_progress(density);
+  }
 
   // Definition of the 3 ranges of escape time,
   int maxit0 = minit + (maxit - minit) / 3.0,
       maxit1 = minit + 2 * (maxit - minit) / 3.0;
 
   dx = (x_b[1] - x_b[0]) / nx;
-  while (current_D < D) {
+  while (density < 1) {
     // generate starting points
     y0 = starting_pts[(2 * itraj) % length_strt] + gaussrand(0.01);
     x0 = starting_pts[(2 * itraj + 1) % length_strt] + gaussrand(0.01);
@@ -129,19 +133,19 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
         }
         itraj++;
         npts += it;
-        current_D = (npts * dx * dx) / A;
+        density = (npts * dx * dx) / (A * D);
+        if (rank == 0 && (density - density_tmp) > 0.01) {
+          write_progress(density);
+          /*   fflush(stdout); */
+          density_tmp = density;
+        }
       }
-      /* if (rank == 0 && itraj % 500 == 0) { */
-      /*   printf("\r" */
-      /*          "----------------Points per pixel per core %-.4f/%.4f", */
-      /*          current_D, D); */
-      /*   fflush(stdout); */
-      /* } */
     }
   }
-  /* if (rank == 0) { */
-  /*   printf("\x1B[2K \r\n"); */
-  /* } */
+  if (rank == 0) {
+    write_progress(-1.0);
+    /* printf("\x1B[2K \r\n"); */
+  }
 }
 
 void border(unsigned int depth, long int length_strt,
@@ -308,7 +312,7 @@ void save_char_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
     }
   }
   for (k = 0; k < size; k++) {
-    *(B_c + k) = (double)*(B + k) * 255 / (weight * bmax);
+    *(B_c + k) = (double)*(B + k) * 255 / bmax;
   }
 
   FILE *fptr;
@@ -362,14 +366,30 @@ void parse(int argc, char *argv[], struct Param *param) {
     *(*param).minit = atoi(argv[3]);
     *(*param).D = (float)atoi(argv[4]);
     *(*param).depth = atoi(argv[5]);
+    (*param).output_dir = argv[6];
+  }
+  if (strlen((*param).output_dir) > MAX_PATH_LENGTH) {
+    printf("\e[1;31mERROR: \e[0;37 output directory path is more than 490 "
+           "characters.\n");
+    exit(1);
   }
 }
 
-void export_param(struct Param param, const char fname[]) {
+void export_param(struct Param param) {
   FILE *fptr = NULL;
-  fptr = fopen(fname, "w+");
+  char filename[MAX_PATH_LENGTH + 21] = {'\0'};
+
+  unsigned outdir_str_len = strlen(param.output_dir);
+  strncpy(filename, param.output_dir, MAX_PATH_LENGTH);
+  if (param.output_dir[outdir_str_len - 1] != '/') {
+    filename[outdir_str_len] = '/';
+    outdir_str_len += 1;
+  }
+  strncat(filename, "param.txt", 10);
+
+  fptr = fopen(filename, "w+");
   if (fptr == NULL) {
-    printf("\e[1;31mERROR: \e[0;37mcannot create param file \n");
+    printf("\e[1;31mERROR: \e[0;37mcannot create param file : %s \n", filename);
     exit(1);
   }
   fprintf(fptr,
@@ -377,5 +397,21 @@ void export_param(struct Param param, const char fname[]) {
           "\ndepth=%u \n",
           *param.nx, *param.ny, *param.maxit, *param.minit, *param.D,
           *param.depth);
+  fclose(fptr);
+}
+
+void write_progress(double density) {
+
+  FILE *fptr = NULL;
+  fptr = fopen("/tmp/progress", "w+");
+  if (fptr == NULL) {
+    printf("\e[1;31mERROR: \e[0;37mcannot create progress file \n");
+    exit(1);
+  }
+  if (density < 0) {
+    fprintf(fptr, "0");
+  } else {
+    fprintf(fptr, "points density %-.4f/100", 100 * density);
+  }
   fclose(fptr);
 }

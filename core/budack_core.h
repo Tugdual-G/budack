@@ -1,4 +1,10 @@
 /* budack_core.h */
+#ifndef BUDACK_CORE_H_
+#define BUDACK_CORE_H_
+
+#define MAX_PATH_LENGTH 490
+#define PARAM_FNAME "param.txt"
+#define HINTS_FNAME "hints.char"
 
 void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
                   unsigned int *M_traj0, unsigned int *M_traj1,
@@ -27,8 +33,13 @@ void save_uint_grayscale(unsigned int ny, unsigned int nx, unsigned int *B,
 struct Param {
   unsigned int *nx, *ny, *maxit, *minit, *depth;
   float *D;
+  char *output_dir;
 };
 
 void parse(int argc, char *argv[], struct Param *param);
 
-void export_param(struct Param param, const char filename[]);
+void export_param(struct Param param);
+
+void write_progress(double density);
+
+#endif // ASDF_H_

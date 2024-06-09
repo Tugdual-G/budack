@@ -1,8 +1,10 @@
 #include "budack_core.h"
+#include "tiff_images.h"
 #include <math.h>
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
@@ -10,17 +12,6 @@
 
 const int e6 = 1000000;
 const int e3 = 1000;
-
-#define dirname0 "output/"
-#define dirname1 "output/traj0/"
-const char *paramfname = dirname1 "param.txt";
-const char *traj0fname = dirname1 "traj0.char";
-const char *traj1fname = dirname1 "traj1.char";
-const char *traj2fname = dirname1 "traj2.char";
-const char *traj0fname_uint = dirname1 "traj0.uint";
-const char *traj1fname_uint = dirname1 "traj1.uint";
-const char *traj2fname_uint = dirname1 "traj2.uint";
-const char *hintsfname = dirname1 "hints.char";
 
 const unsigned int LENGTH_STRT = 50000;
 
@@ -45,8 +36,12 @@ int main(int argc, char *argv[]) {
   unsigned int start = 500;
   unsigned int depth = maxit;
 
-  struct Param param = {
-      .nx = &nx, .maxit = &maxit, .minit = &minit, .D = &D, .depth = &depth};
+  struct Param param = {.nx = &nx,
+                        .maxit = &maxit,
+                        .minit = &minit,
+                        .D = &D,
+                        .depth = &depth,
+                        .output_dir = "/tmp/"};
 
   parse(argc, argv, &param);
 
@@ -64,8 +59,6 @@ int main(int argc, char *argv[]) {
     printf("Number of cores : %i \n", world_size);
     // FIXME The creation of the directories should be done
     // during the installation.
-    mkdir(dirname0, 0777);
-    mkdir(dirname1, 0777);
 
     float max_memory;
     // in bytes
@@ -78,7 +71,7 @@ int main(int argc, char *argv[]) {
     printf("nx = %d ; ny = %d ; depth = %u \n", nx, ny, depth);
     printf("maxit = %d ; minit = %d ; Points per pixels %.2f \n", maxit, minit,
            D);
-    export_param(param, paramfname);
+    export_param(param);
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
@@ -110,7 +103,7 @@ int main(int argc, char *argv[]) {
   border(depth, length_brdr, M_brdr, M, start, a[0], b[0], dx, nx);
   // Saving a view of the points
   if (rank == 0) {
-    save(hintsfname, M, sizeof(unsigned char), nx * ny);
+    save(HINTS_FNAME, M, sizeof(unsigned char), nx * ny);
   }
   free(M);
 
@@ -118,33 +111,33 @@ int main(int argc, char *argv[]) {
   //   Cumputing the trajectories
   ////////////////////////////////////////////////
 
-  unsigned int *B0 = NULL, *B1 = NULL, *B2 = NULL, *B_sum0 = NULL,
-               *B_sum1 = NULL, *B_sum2 = NULL;
+  unsigned int *histo0 = NULL, *histo1 = NULL, *histo2 = NULL,
+               *histo_sum0 = NULL, *histo_sum1 = NULL, *histo_sum2 = NULL;
 
   if (rank == 0) {
-    B_sum0 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
-    if (B_sum0 == NULL) {
+    histo_sum0 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+    if (histo_sum0 == NULL) {
       printf("\n Error, no memory allocated for trajectories sum \n");
       exit(1);
     }
   } else if (rank == 1) {
-    B_sum1 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
-    if (B_sum1 == NULL) {
+    histo_sum1 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+    if (histo_sum1 == NULL) {
       printf("\n Error, no memory allocated for trajectories sum \n");
       exit(1);
     }
   } else if (rank == 2) {
-    B_sum2 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
-    if (B_sum2 == NULL) {
+    histo_sum2 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+    if (histo_sum2 == NULL) {
       printf("\n Error, no memory allocated for trajectories sum \n");
       exit(1);
     }
   }
-  B0 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
-  B1 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
-  B2 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+  histo0 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+  histo1 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
+  histo2 = (unsigned int *)calloc(nx * ny, sizeof(unsigned int));
 
-  if (B0 == NULL || B1 == NULL || B2 == NULL) {
+  if (histo0 == NULL || histo1 == NULL || histo2 == NULL) {
     printf("\n Error, no memory allocated for trajectories \n");
     exit(1);
   }
@@ -159,40 +152,73 @@ int main(int argc, char *argv[]) {
     begin = clock();
   }
 
-  trajectories(nx, ny, a, b, B0, B1, B2, D, maxit, minit, M_brdr, length_brdr);
+  trajectories(nx, ny, a, b, histo0, histo1, histo2, D, maxit, minit, M_brdr,
+               length_brdr);
   free(M_brdr);
 
-  MPI_Reduce(B0, B_sum0, nx * ny, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-  free(B0);
-  MPI_Reduce(B1, B_sum1, nx * ny, MPI_INT, MPI_SUM, 1, MPI_COMM_WORLD);
-  free(B1);
-  MPI_Reduce(B2, B_sum2, nx * ny, MPI_INT, MPI_SUM, 2, MPI_COMM_WORLD);
-  free(B2);
+  MPI_Reduce(histo0, histo_sum0, nx * ny, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+  free(histo0);
+  MPI_Reduce(histo1, histo_sum1, nx * ny, MPI_INT, MPI_SUM, 1, MPI_COMM_WORLD);
+  free(histo1);
+  MPI_Reduce(histo2, histo_sum2, nx * ny, MPI_INT, MPI_SUM, 2, MPI_COMM_WORLD);
+  free(histo2);
 
+  MPI_Barrier(MPI_COMM_WORLD);
+  uint16_t *R_16 = NULL;
+  uint16_t *G_16 = NULL;
+  uint16_t *B_16 = NULL;
   if (rank == 0) {
     end = clock();
     t_comp = (float)(end - begin);
     t_comp = t_comp / CLOCKS_PER_SEC;
-    printf("Time elapsed computing trajectories %f s \n", t_comp);
-
+    printf("\nTime elapsed computing trajectories %f s \n", t_comp);
     // Storing variables on disk
-    mirror_traj(ny, nx, B_sum0); // Make the image symetric
-    save_char_grayscale(ny, nx, B_sum0, 1, traj0fname);
-    save(traj0fname_uint, B_sum0, sizeof(unsigned int), nx * ny);
+    mirror_traj(ny, nx, histo_sum0); // Make the image symetric
+    R_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
+    G_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
+    B_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
+    if (!R_16 | !G_16 | !B_16) {
+      printf("\n Error, no memory allocated for RGB arrays \n");
+      exit(1);
+    }
+    normalize_uint_to_16bits(histo_sum0, R_16, nx * ny);
+    free(histo_sum0);
+    MPI_Recv(G_16, nx * ny, MPI_UINT16_T, 1, 10, MPI_COMM_WORLD, NULL);
+    MPI_Recv(B_16, nx * ny, MPI_UINT16_T, 2, 20, MPI_COMM_WORLD, NULL);
 
   } else if (rank == 1) {
-    mirror_traj(ny, nx, B_sum1); // Make the image symetric
-    save_char_grayscale(ny, nx, B_sum1, 1, traj1fname);
-    save(traj1fname_uint, B_sum1, sizeof(unsigned int), nx * ny);
+    mirror_traj(ny, nx, histo_sum1); // Make the image symetric
+    G_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
+    if (!G_16) {
+      printf("\n Error, no memory allocated for G RGB arrays \n");
+      exit(1);
+    }
+    normalize_uint_to_16bits(histo_sum1, G_16, nx * ny);
+    free(histo_sum1);
+    MPI_Send(G_16, nx * ny, MPI_UINT16_T, 0, 10, MPI_COMM_WORLD);
 
   } else if (rank == 2) {
-    mirror_traj(ny, nx, B_sum2); // Make the image symetric
-    save_char_grayscale(ny, nx, B_sum2, 1, traj2fname);
-    save(traj2fname_uint, B_sum2, sizeof(unsigned int), nx * ny);
+    mirror_traj(ny, nx, histo_sum2); // Make the image symetric
+    B_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
+    if (!B_16) {
+      printf("\n Error, no memory allocated for B RGB arrays \n");
+      exit(1);
+    }
+    normalize_uint_to_16bits(histo_sum2, B_16, nx * ny);
+    free(histo_sum2);
+    MPI_Send(B_16, nx * ny, MPI_UINT16_T, 0, 20, MPI_COMM_WORLD);
   }
-  free(B_sum0);
-  free(B_sum1);
-  free(B_sum2);
+  if (rank == 0) {
+    unsigned outdir_str_len = strlen(param.output_dir);
+    char filename[MAX_PATH_LENGTH + 21] = {'\0'};
+    strncpy(filename, param.output_dir, MAX_PATH_LENGTH);
+    if (param.output_dir[outdir_str_len - 1] != '/') {
+      filename[outdir_str_len] = '/';
+    }
+    strncat(filename, "image.tiff", 11);
+    write_tiff_16bitsRGB(filename, R_16, G_16, B_16, nx, ny);
+  }
+
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize(); // finish MPI environment
   return 0;
