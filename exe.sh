@@ -3,6 +3,28 @@
 # This is the main executable.
 # This script generate the trajectories and the images.
 
+nx=1000 # Number of pixels in vertical direction
+density=10 # Number of point per pixels, higher = less noise but slower
+maxit=300 # Maximum number of iterations
+minit=60 # Minimum number of iterations
+
+
+PNG_IMAGE_NAME=nx"${nx}"_minit"${minit}"_maxit"${maxit}".png
+
+# Output of the computation
+RAW_OUTPUT_DIR=/tmp/budack/
+
+# Output directory of the enhanced images
+ENHANCED_OUTPUT_DIR=output/
+
+
+# This will change greatly the apparence of the images,
+# the closer it is to maxit, the faster the computation,
+# but finer details will appear if it is low.
+# This parameter will change the points where the normal distribution is centered.
+# This coresspond to the max iteration (escape time) of these points.
+depth=${minit}
+
 # Location of the executable, you shouldn't change this.
 budack=core/budack
 
@@ -10,6 +32,7 @@ if [[ ! -f "${budack}" ]]
     then
     make
 fi
+
 # The computation need 3 cores to run properly
 # if les than 3 cores available, we use the oversubscribe option.
 ncores=$(getconf _NPROCESSORS_ONLN)
@@ -21,40 +44,20 @@ if [ $ncores -lt 3 ]
 fi
 
 # Output of the computation
-trajdir0=/tmp/budack/
-if [[ ! -d "${trajdir0}" ]]
+if [[ ! -d "${RAW_OUTPUT_DIR}" ]]
    then
-   mkdir "${trajdir0}"
+   mkdir "${RAW_OUTPUT_DIR}"
 fi
 
 # Output directory of the enhanced images
-trajdir=output/
-if [[ ! -d "${trajdir}" ]]
+if [[ ! -d "${ENHANCED_OUTPUT_DIR}" ]]
    then
-    mkdir "${trajdir}"
+    mkdir "${ENHANCED_OUTPUT_DIR}"
 fi
 
-nx=800 # Number of pixels in vertical direction
-density=10 # Number of point per pixels, higher = less noise but slower
-maxit=600 # Maximum number of iterations
-minit=60 # Minimum number of iterations
-
-# maxit=1000 # Maximum number of iterations
-# minit=50 # Minimum number of iterations
-
-# Parameters file
-params_f="${trajdir}"param.txt
-
-# This will change greatly the apparence of the images,
-# the closer it is to maxit, the faster the computation,
-# but finer details will appear if it is low.
-# This parameter will change the points where the normal distribution is centered.
-# This coresspond to the max iteration (escape time) of these points.
-depth=60
-#depth=$(((maxit+minit)/2))
 
 # #------------- computing  -------------
-mpiexec $oversub "$budack" "$nx" "$maxit" "$minit" "$density" "$depth" "$trajdir0" &
+mpiexec $oversub "$budack" "$nx" "$maxit" "$minit" "$density" "$depth" "$RAW_OUTPUT_DIR" &
 
 # Since open-MPI last version this is necesary in order to know the progress of the computation.
 START_TIME=$SECONDS
@@ -66,14 +69,14 @@ do
 done
 while [ "$value" != "0" ]
 do
-    ELAPSED_TIME=$(($SECONDS - $START_TIME))
+    ELAPSED_TIME=$((SECONDS - START_TIME))
     printf "\r%s  %u s" "$value" "$ELAPSED_TIME"
     value=$(cat /tmp/progress)
-    sleep 0.5
+    sleep 0.2
 done
-
-contrast="-sigmoidal-contrast 20x0%"
-magick "${trajdir0}"image.tiff ${contrast} -rotate 90 "${trajdir}"image.png
-echo "written enhanced image (sigmoidal contrast) ," "${trajdir}"image.png
-nsxiv "${trajdir}"image.png
 wait
+
+contrast="-sigmoidal-contrast 20x5%"
+magick "${RAW_OUTPUT_DIR}"image.tiff ${contrast} -rotate 90 "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
+echo "written enhanced image (sigmoidal contrast) ," "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
+nsxiv "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
