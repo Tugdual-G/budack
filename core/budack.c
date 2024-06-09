@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
     printf("Error no memory allocated to border points \n");
     exit(1);
   }
-  unsigned char *M = NULL;
+  uint8_t *M = NULL;
   M = (unsigned char *)calloc(nx * ny, sizeof(double));
   if (M == NULL) {
     printf("Error, no memory allocated for border points grid \n");
@@ -102,9 +102,16 @@ int main(int argc, char *argv[]) {
   // and just use the hint files
   border(depth, length_brdr, M_brdr, M, start, a[0], b[0], dx, nx);
   // Saving a view of the points
-  if (rank == 0) {
-    save(HINTS_FNAME, M, sizeof(unsigned char), nx * ny);
-  }
+  /* if (rank == 0) { */
+  /*   unsigned outdir_str_len = strlen(param.output_dir); */
+  /*   char filename[MAX_PATH_LENGTH + 21] = {'\0'}; */
+  /*   strncpy(filename, param.output_dir, MAX_PATH_LENGTH); */
+  /*   if (param.output_dir[outdir_str_len - 1] != '/') { */
+  /*     filename[outdir_str_len] = '/'; */
+  /*   } */
+  /*   strncat(filename, HINTS_FNAME, 11); */
+  /*   write_tiff_16bits_grayscale(filename, M, nx, ny); */
+  /* } */
   free(M);
 
   ////////////////////////////////////////////////

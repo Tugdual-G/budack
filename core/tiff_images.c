@@ -56,6 +56,46 @@ int write_tiff_16bitsRGB(const char *fname, uint16_t *R, uint16_t *G,
   return 0;
 }
 
+int write_tiff_16bits_grayscale(const char *fname, uint8_t *gray_scale,
+                                unsigned width, unsigned height) {
+
+  // Open the TIFF file for writing
+  TIFF *tif = TIFFOpen(fname, "w");
+
+  if (!tif) {
+    fprintf(stderr, "Failed to open %s for writing\n", fname);
+    return 1;
+  }
+
+  // Set the TIFF fields
+  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32_t)width);
+  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32_t)height);
+  TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1); // 3 channels (RGB)
+  TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);   // 16 bits per channel
+  TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 1);
+  TIFFSetField(tif, TIFFTAG_SOFTWARE, "Budack");
+  /* TIFFSetField(tif, TIFFTAG_IMAGEDESCRIPTION, ""); */
+  TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
+  TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+  TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+  TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
+
+  // Write the image data to the TIFF file
+  for (unsigned row = 0; row < height; row++) {
+    if (TIFFWriteScanline(tif, (gray_scale + row * width), (uint32_t)row, 0) <
+        0) {
+      fprintf(stderr, "Failed to write scanline %u\n", row);
+      TIFFClose(tif);
+      return 1;
+    }
+  }
+
+  // Close the TIFF file
+  TIFFClose(tif);
+  printf("16 bits per channel RGB TIFF file created successfully, %s\n", fname);
+  return 0;
+}
+
 void normalize_uint_to_16bits(unsigned int *in, uint16_t *out, size_t n) {
   double max = 0;
   for (size_t k = 0; k < n; k++) {

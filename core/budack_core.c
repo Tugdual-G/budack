@@ -1,9 +1,11 @@
 #include "budack_core.h"
 #include <math.h>
 #include <mpi.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -149,7 +151,7 @@ void trajectories(unsigned int nx, unsigned int ny, float x_b[2], float y_b[2],
 }
 
 void border(unsigned int depth, long int length_strt,
-            double *restrict starting_pts, unsigned char *restrict M,
+            double *restrict starting_pts, uint8_t *restrict M,
             unsigned int start, float a0, float b0, double dx,
             unsigned int nx) {
   // Fill starting_pts with a list of random points at the boundary
@@ -215,7 +217,7 @@ void border(unsigned int depth, long int length_strt,
   }
 }
 
-void border_start(unsigned int depth, double *starting_pts, unsigned char *M,
+void border_start(unsigned int depth, double *starting_pts, uint8_t *M,
                   unsigned int start, float a0, float b0, double dx,
                   unsigned int nx) {
   // Found random points close to the border of the Mdlbrt set
