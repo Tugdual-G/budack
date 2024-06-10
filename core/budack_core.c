@@ -68,7 +68,7 @@ void draw_trajectories(uint32_t *M, double x0, double y0, unsigned int nit,
   i = (y - y_b[0]) / dx;
   j = (x - x_b[0]) / dx;
   if (i >= 0 && i < (int)ny && j >= 0 && j < (int)nx) {
-    *(M + nx * i + j) += 1;
+    ++*(M + nx * i + j);
   }
   for (unsigned int k = 0; k < nit; ++k) {
     y = 2 * x * y + y0;
@@ -78,13 +78,65 @@ void draw_trajectories(uint32_t *M, double x0, double y0, unsigned int nit,
     i = (y - y_b[0]) / dx;
     j = (x - x_b[0]) / dx;
     if (i >= 0 && i < (int)ny && j >= 0 && j < (int)nx) {
-      *(M + nx * i + j) += 1;
+      ++*(M + nx * i + j);
     }
   }
 }
 
-void trajectories(double D, int maxit, int minit, double *restrict starting_pts,
-                  unsigned int length_strt, double dx) {
+void recieve_and_draw(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
+                      double b[2], unsigned int nx, unsigned int ny,
+                      int world_size) {
+  clock_t t0, t = 0;
+  write_progress(0);
+  MPI_Request requ;
+  int completion_flag = 0;
+  pts_msg *recbuff = (pts_msg *)malloc(sizeof(pts_msg) * PTS_MSG_SIZE);
+  if (!recbuff) {
+    printf("Error: recbuff not allocated \n");
+    exit(1);
+  }
+  MPI_Recv_init(recbuff, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE,
+                MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &requ);
+
+  while (completion_flag < (world_size - 1)) {
+
+    t0 = clock();
+    MPI_Start(&requ);
+    MPI_Wait(&requ, MPI_STATUS_IGNORE);
+    /* MPI_Recv(recbuff, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, */
+    /*          MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status); */
+    t += clock() - t0;
+
+    if (recbuff[0].color) {
+      for (unsigned int i = 0; i < PTS_MSG_SIZE; ++i) {
+        switch (recbuff[i].color) {
+        case 'r':
+          draw_trajectories(R, recbuff[i].x, recbuff[i].y, recbuff[i].nit, a, b,
+                            nx, ny);
+          break;
+        case 'g':
+          draw_trajectories(G, recbuff[i].x, recbuff[i].y, recbuff[i].nit, a, b,
+                            nx, ny);
+          break;
+        case 'b':
+          draw_trajectories(B, recbuff[i].x, recbuff[i].y, recbuff[i].nit, a, b,
+                            nx, ny);
+          break;
+        }
+      }
+
+    } else {
+      ++completion_flag;
+    }
+  }
+  free(recbuff);
+  write_progress(-2);
+  printf("\nmaster waiting time : %lf s \n", (double)t / CLOCKS_PER_SEC);
+}
+
+void trajectories(double D, unsigned int maxit, unsigned int minit,
+                  double *restrict starting_pts, unsigned int length_strt,
+                  double dx) {
   // This where the trajectories are computed. Tree ranges of escape times are
   // used for rgb.
   // M_traj0 store the lowest escape time range of trajectories, and M_traj2
@@ -92,12 +144,10 @@ void trajectories(double D, int maxit, int minit, double *restrict starting_pts,
 
   clock_t t0, t = 0;
 
-  MPI_Request req = MPI_REQUEST_NULL;
-
   // For parallel processing
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
+  MPI_Request req = MPI_REQUEST_NULL;
   pts_msg sended_points[2 * PTS_MSG_SIZE];
 
   // Locating the points in space
@@ -108,8 +158,9 @@ void trajectories(double D, int maxit, int minit, double *restrict starting_pts,
   // - itraj : number of trajectories satisfying the
   //           higgher minimal escape time.
   // - it : number of iteration for one trajectory.
-  size_t itraj = 0;
+  size_t i_hint = 0;
   unsigned int it = 0;
+  unsigned int n0 = 0, n1 = 0;
 
   // - npts : total numbers of points visited for
   //          the higgest escape time range.
@@ -118,18 +169,18 @@ void trajectories(double D, int maxit, int minit, double *restrict starting_pts,
   char diverge = 0;
 
   // Current min density.
-  double density = 0.0;
+  double density = 0.0, density_factor = dx * dx / (AREA * D);
   write_progress(density);
   // Definition of the 3 ranges of escape time,
-  int maxit0 = minit + (maxit - minit) / 3.0,
-      maxit1 = minit + 2 * (maxit - minit) / 3.0;
+  unsigned int maxit0 = minit + (maxit - minit) / 3.0,
+               maxit1 = minit + 2 * (maxit - minit) / 3.0;
 
   double density_maxit = 0, density_minit = 0, density_medit = 0;
 
   while (density < 1.0) {
     // generate starting points
-    y0 = starting_pts[(2 * itraj) % length_strt] + gaussrand(0.01);
-    x0 = starting_pts[(2 * itraj + 1) % length_strt] + gaussrand(0.01);
+    y0 = starting_pts[(i_hint) % (2 * length_strt)] + gaussrand(0.01);
+    x0 = starting_pts[(i_hint + 1) % (2 * length_strt)] + gaussrand(0.01);
 
     it = 0;
     x = x0;
@@ -155,41 +206,44 @@ void trajectories(double D, int maxit, int minit, double *restrict starting_pts,
         sended_points[npts].color = 'r';
         sended_points[npts].x = x0;
         sended_points[npts].y = y0;
-        density_minit += (it * dx * dx) / (AREA * D);
+        density_minit += it * density_factor;
         maxit0 = density_minit < 1.0 ? maxit0 : 0;
+        n0 += 1;
+        i_hint += (n0 % 200 == 0) ? 2 : 0;
 
       } else if (it < maxit1) {
         sended_points[npts].nit = it;
         sended_points[npts].color = 'g';
         sended_points[npts].x = x0;
         sended_points[npts].y = y0;
-        density_medit += (it * dx * dx) / (AREA * D);
+        density_medit += it * density_factor;
         maxit1 = density_medit < 1.0 ? maxit1 : maxit0;
+        n1 += 1;
+        i_hint += (n1 % 50 == 0) ? 2 : 0;
 
       } else {
         sended_points[npts].nit = it;
         sended_points[npts].color = 'b';
         sended_points[npts].x = x0;
         sended_points[npts].y = y0;
-        ++itraj;
-        density_maxit += (it * dx * dx) / (AREA * D);
+        density_maxit += it * density_factor;
         maxit = density_maxit < 1.0 ? maxit : maxit1;
+        i_hint += 2;
       }
       density = min3_double(density_minit, density_medit, density_maxit);
       ++npts;
+
       if (npts % PTS_MSG_SIZE == 0) {
-        if (rank == 1) {
+        if (rank == 1 && npts % (PTS_MSG_SIZE * 2) == 0) {
           write_progress(density);
         }
+
         t0 = clock();
         MPI_Wait(&req, MPI_STATUS_IGNORE);
-        t += clock() - t0;
         MPI_Isend(sended_points + npts - PTS_MSG_SIZE,
                   sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
                   MPI_COMM_WORLD, &req);
-        /* MPI_Bsend(sended_points + npts - PTS_MSG_SIZE, */
-        /*           sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank, */
-        /*           MPI_COMM_WORLD); */
+        t += clock() - t0;
         npts %= 2 * PTS_MSG_SIZE;
       }
     }
@@ -206,19 +260,14 @@ void trajectories(double D, int maxit, int minit, double *restrict starting_pts,
     MPI_Isend(sended_points + PTS_MSG_SIZE * (npts / PTS_MSG_SIZE),
               sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank, MPI_COMM_WORLD,
               &req);
-    /* MPI_Bsend(sended_points + PTS_MSG_SIZE * (npts / PTS_MSG_SIZE), */
-    /*           sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank, */
-    /*           MPI_COMM_WORLD); */
   }
-  // Sending a flag (0)
+  // Sending end flag (0)
   sended_points[0].color = 0;
   MPI_Wait(&req, MPI_STATUS_IGNORE);
   MPI_Isend(sended_points, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
             MPI_COMM_WORLD, &req);
-  printf("waiting time rank %i : %lf s \n", rank, (double)t / CLOCKS_PER_SEC);
-  /* MPI_Bsend(sended_points, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
-   */
-  /*           MPI_COMM_WORLD); */
+  printf("\nslave waiting time rank %i : %lf s \n", rank,
+         (double)t / CLOCKS_PER_SEC);
 }
 
 int border(unsigned int depth, long int length_strt,

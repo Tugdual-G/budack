@@ -60,12 +60,11 @@ int main(int argc, char *argv[]) {
 
   if (rank == 0) {
     printf("Number of cores : %i \n", world_size);
-    // FIXME The creation of the directories should be done
-    // during the installation.
 
     double max_memory;
+
     // in bytes
-    max_memory = nx * ny * sizeof(unsigned int) * (3 + 3 * world_size) +
+    max_memory = 3 * nx * ny * (sizeof(uint16_t) + sizeof(uint32_t)) +
                  LENGTH_STRT * sizeof(double);
     // In GiB
     max_memory /= (double)1024 * 1024;
@@ -84,7 +83,7 @@ int main(int argc, char *argv[]) {
 
   // There is no need to parallelise this part
 
-  clock_t begin = clock();
+  clock_t t_begin = clock();
 
   double *starting_pts = NULL;
   unsigned int length_brdr = LENGTH_STRT / (world_size - 1);
@@ -98,17 +97,14 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  // For short computation it is faster to not compute these points
-  // and just use the hint files
   border(depth, length_brdr, starting_pts);
 
   ////////////////////////////////////////////////
   //   Cumputing the trajectories
   ////////////////////////////////////////////////
 
-  uint32_t *R_32 = NULL, *G_32 = NULL, *B_32 = NULL;
-
   if (rank == 0) {
+    uint32_t *R_32 = NULL, *G_32 = NULL, *B_32 = NULL;
     R_32 = (uint32_t *)calloc(nx * ny, sizeof(uint32_t));
     G_32 = (uint32_t *)calloc(nx * ny, sizeof(uint32_t));
     B_32 = (uint32_t *)calloc(nx * ny, sizeof(uint32_t));
@@ -116,77 +112,15 @@ int main(int argc, char *argv[]) {
       printf("\n Error, no memory allocated for trajectories sum \n");
       exit(1);
     }
-  }
+    recieve_and_draw(R_32, G_32, B_32, a, b, nx, ny, world_size);
 
-  MPI_Barrier(MPI_COMM_WORLD);
+    printf("\nTime elapsed computing trajectories %f s \n",
+           (double)(clock() - t_begin) / CLOCKS_PER_SEC);
 
-  clock_t end = clock();
-  double t_comp;
-
-  switch (rank) {
-  case 0: {
-    write_progress(0);
-    begin = clock();
-
-    double current_density = 0;
-    int completion_flag = 0;
-    pts_msg *recbuff = (pts_msg *)malloc(sizeof(pts_msg) * PTS_MSG_SIZE);
-    if (!recbuff) {
-      printf("Error: recbuff not allocated \n");
-      exit(1);
-    }
-    MPI_Status status;
-
-    while (completion_flag < (world_size - 1)) {
-
-      MPI_Recv(recbuff, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE,
-               MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-
-      if (recbuff[0].color) {
-        for (unsigned int i = 0; i < PTS_MSG_SIZE; ++i) {
-          switch (recbuff[i].color) {
-          case 'r':
-            draw_trajectories(R_32, recbuff[i].x, recbuff[i].y, recbuff[i].nit,
-                              a, b, nx, ny);
-            break;
-          case 'g':
-            draw_trajectories(G_32, recbuff[i].x, recbuff[i].y, recbuff[i].nit,
-                              a, b, nx, ny);
-            break;
-          case 'b':
-            draw_trajectories(B_32, recbuff[i].x, recbuff[i].y, recbuff[i].nit,
-                              a, b, nx, ny);
-            /* current_density += recbuff[i].nit * dx * dx / (AREA * D); */
-            break;
-          }
-          /* write_progress(current_density); */
-        }
-
-      } else {
-        ++completion_flag;
-      }
-    }
-    free(recbuff);
-    write_progress(-2);
-    break;
-  }
-  default: {
-    trajectories(D / (double)world_size, maxit, minit, starting_pts,
-                 length_brdr, dx);
-    free(starting_pts);
-  }
-  }
-
-  switch (rank) {
-  case 0: {
     uint16_t *R_16 = NULL;
     uint16_t *G_16 = NULL;
     uint16_t *B_16 = NULL;
 
-    end = clock();
-    t_comp = (double)(end - begin);
-    t_comp = t_comp / CLOCKS_PER_SEC;
-    printf("\nTime elapsed computing trajectories %f s \n", t_comp);
     // Storing variables on disk
     mirror_traj(ny, nx, R_32); // Make the image symetric
     mirror_traj(ny, nx, G_32); // Make the image symetric
@@ -216,8 +150,14 @@ int main(int argc, char *argv[]) {
     free(R_16);
     free(G_16);
     free(B_16);
+
+  } else {
+
+    trajectories(D / (double)world_size, maxit, minit, starting_pts,
+                 length_brdr, dx);
+    free(starting_pts);
   }
-  }
+
   MPI_Finalize(); // finish MPI environment
   return 0;
 }
