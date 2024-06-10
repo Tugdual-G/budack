@@ -11,9 +11,16 @@
 
 #define PI 3.141592654
 
-// A define an area of reference to compute the density
-// of points.
-#define AREA 9.0
+double min3_double(double x, double y, double z) {
+  double min = x < y ? x : y;
+  min = min < z ? min : z;
+  return min;
+}
+/* int max3_int(int x, int y, int z) { */
+/*   int max = x < y ? y : x; */
+/*   max = max < z ? z : max; */
+/*   return max; */
+/* } */
 
 double gaussrand(double dx) {
   // generate a random double.
@@ -42,52 +49,79 @@ double randomdouble(double min, double max) {
   return r;
 }
 
-void trajectories(unsigned int nx, unsigned int ny, double x_b[2],
-                  double y_b[2], unsigned int *restrict M_traj0,
-                  unsigned int *restrict M_traj1,
-                  unsigned int *restrict M_traj2, double D, int maxit,
-                  int minit, double *restrict starting_pts,
-                  unsigned int length_strt) {
+void draw_trajectories(uint32_t *M, double x0, double y0, unsigned int nit,
+                       double *x_b, double *y_b, unsigned int nx,
+                       unsigned int ny) {
+  // Locating the points in space
+  // y for imaginary points
+  // dx is the step of the grid
+  double dx, x, y, x2, y2;
+  dx = (x_b[1] - x_b[0]) / nx;
+
+  // - it : number of iteration for one trajectory.
+  int i = 0, j = 0;
+
+  x = x0;
+  y = y0;
+  x2 = x * x;
+  y2 = y * y;
+  i = (y - y_b[0]) / dx;
+  j = (x - x_b[0]) / dx;
+  if (i >= 0 && i < (int)ny && j >= 0 && j < (int)nx) {
+    *(M + nx * i + j) += 1;
+  }
+  for (unsigned int k = 0; k < nit; ++k) {
+    y = 2 * x * y + y0;
+    x = x2 - y2 + x0;
+    x2 = x * x;
+    y2 = y * y;
+    i = (y - y_b[0]) / dx;
+    j = (x - x_b[0]) / dx;
+    if (i >= 0 && i < (int)ny && j >= 0 && j < (int)nx) {
+      *(M + nx * i + j) += 1;
+    }
+  }
+}
+
+void trajectories(double D, int maxit, int minit, double *restrict starting_pts,
+                  unsigned int length_strt, double dx) {
   // This where the trajectories are computed. Tree ranges of escape times are
   // used for rgb.
-  // M_traj0 store the lowest escape time range of trajectories, and M_traj2 the
-  // highest.
+  // M_traj0 store the lowest escape time range of trajectories, and M_traj2
+  // the highest.
+  MPI_Request req = MPI_REQUEST_NULL;
 
   // For parallel processing
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+  pts_msg sended_points[2 * PTS_MSG_SIZE];
+
   // Locating the points in space
   // y for imaginary points
   // dx is the step of the grid
-  double dx, x, y, x0, y0, x2, y2;
+  double x, y, x0, y0, x2, y2;
 
   // - itraj : number of trajectories satisfying the
   //           higgher minimal escape time.
   // - it : number of iteration for one trajectory.
   size_t itraj = 0;
-  unsigned int it = 0, i = 0;
+  unsigned int it = 0;
 
   // - npts : total numbers of points visited for
   //          the higgest escape time range.
-  size_t npts = 0;
+  unsigned int npts = 0;
 
-  // ij : indexes of the visited points in the array.
-  unsigned int ij[maxit * 2 + 1];
   char diverge = 0;
 
-  // Current density.
+  // Current min density.
   double density = 0.0;
-  double density_tmp = -1.0;
-  if (rank == 0) {
-    write_progress(density);
-  }
-
   // Definition of the 3 ranges of escape time,
   int maxit0 = minit + (maxit - minit) / 3.0,
       maxit1 = minit + 2 * (maxit - minit) / 3.0;
 
-  dx = (x_b[1] - x_b[0]) / nx;
+  double density_maxit = 0, density_minit = 0, density_medit = 0;
+
   while (density < 1.0) {
     // generate starting points
     y0 = starting_pts[(2 * itraj) % length_strt] + gaussrand(0.01);
@@ -100,61 +134,83 @@ void trajectories(unsigned int nx, unsigned int ny, double x_b[2],
     y2 = y * y;
     diverge = 0;
 
-    ij[0] = (y - y_b[0]) / dx;
-    ij[1] = (x - x_b[0]) / dx;
-
-    while (it < (2 * maxit) && diverge == 0) {
+    while (it < maxit && diverge == 0) {
       // Storing the trajectories
       y = 2 * x * y + y0;
       x = x2 - y2 + x0;
       x2 = x * x;
       y2 = y * y;
-      it += 2;
-      ij[it] = (y - y_b[0]) / dx;
-      ij[it + 1] = (x - x_b[0]) / dx;
+      ++it;
       if (x2 + y2 > 4) {
         diverge = 1;
       }
     }
-    if (diverge == 1 && (it / 2) > minit) {
-      if ((it / 2) < maxit0) {
-        for (i = 0; i < it; i += 2) {
-          if (ij[i] >= 0 && ij[i] < ny && ij[i + 1] >= 0 && ij[i + 1] < nx) {
-            *(M_traj0 + nx * ij[i] + ij[i + 1]) += 1;
-          }
-        }
-      } else if ((it / 2) < maxit1) {
-        for (i = 0; i < it; i += 2) {
-          if (ij[i] >= 0 && ij[i] < ny && ij[i + 1] >= 0 && ij[i + 1] < nx) {
-            *(M_traj1 + nx * ij[i] + ij[i + 1]) += 1;
-          }
-        }
-      } else {
-        for (i = 0; i < it; i += 2) {
-          if (ij[i] >= 0 && ij[i] < ny && ij[i + 1] >= 0 && ij[i + 1] < nx) {
-            *(M_traj2 + nx * ij[i] + ij[i + 1]) += 1;
-          }
-        }
+    if (diverge == 1 && it > minit) {
+      if (it < maxit0) {
+        sended_points[npts].nit = it;
+        sended_points[npts].color = 'r';
+        sended_points[npts].x = x0;
+        sended_points[npts].y = y0;
+        density_minit += (it * dx * dx) / (AREA * D);
+        maxit0 = density_minit < 1.0 ? maxit0 : 0;
 
-        itraj++;
-        npts += (it / 2);
-        density = (npts * dx * dx) / (AREA * D);
-        if (rank == 0 && (density - density_tmp) > 0.01) {
-          write_progress(density);
-          density_tmp = density;
-        }
+      } else if (it < maxit1) {
+        sended_points[npts].nit = it;
+        sended_points[npts].color = 'g';
+        sended_points[npts].x = x0;
+        sended_points[npts].y = y0;
+        density_medit += (it * dx * dx) / (AREA * D);
+        maxit1 = density_medit < 1.0 ? maxit1 : maxit0;
+
+      } else {
+        sended_points[npts].nit = it;
+        sended_points[npts].color = 'b';
+        sended_points[npts].x = x0;
+        sended_points[npts].y = y0;
+        ++itraj;
+        density_maxit += (it * dx * dx) / (AREA * D);
+        maxit = density_maxit < 1.0 ? maxit : maxit1;
+      }
+      density = min3_double(density_minit, density_medit, density_maxit);
+      ++npts;
+      if (npts % PTS_MSG_SIZE == 0) {
+        MPI_Wait(&req, MPI_STATUS_IGNORE);
+        /* MPI_Isend(sended_points + npts - PTS_MSG_SIZE, */
+        /*           sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank, */
+        /*           MPI_COMM_WORLD, &req); */
+        MPI_Bsend(sended_points + npts - PTS_MSG_SIZE,
+                  sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
+                  MPI_COMM_WORLD);
+        npts %= 2 * PTS_MSG_SIZE;
       }
     }
   }
-  if (rank == 0) {
-    write_progress(-1.0);
+
+  if (npts % PTS_MSG_SIZE != 0) {
+    for (unsigned char i = npts; i < PTS_MSG_SIZE * 2; ++i) {
+      sended_points[i].color = 0;
+    }
+    MPI_Wait(&req, MPI_STATUS_IGNORE);
+    /* MPI_Isend(sended_points + PTS_MSG_SIZE * (npts / PTS_MSG_SIZE), */
+    /*           sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
+     * MPI_COMM_WORLD, */
+    /*           &req); */
+    MPI_Bsend(sended_points + PTS_MSG_SIZE * (npts / PTS_MSG_SIZE),
+              sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
+              MPI_COMM_WORLD);
   }
+  // Sending a flag (0)
+  sended_points[0].color = 0;
+  MPI_Wait(&req, MPI_STATUS_IGNORE);
+  /* MPI_Isend(sended_points, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
+   */
+  /*           MPI_COMM_WORLD, &req); */
+  MPI_Bsend(sended_points, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
+            MPI_COMM_WORLD);
 }
 
-void border(unsigned int depth, long int length_strt,
-            double *restrict starting_pts, uint8_t *restrict M,
-            unsigned int start, double a0, double b0, double dx,
-            unsigned int nx) {
+int border(unsigned int depth, long int length_strt,
+           double *restrict starting_pts) {
   // Fill starting_pts with a list of random points at the boundary
   // of the mandelbrot set, if a file already exist, load them, else,
   // generate the points with the border_start function and write them
@@ -177,50 +233,82 @@ void border(unsigned int depth, long int length_strt,
   if (depth > 10000000 || depth < 11) {
     printf("\e[1;31mERROR: \e[0;37mdepth cannot be greater than 10000000 or "
            "smaller than 11\n");
-    MPI_Finalize();
     exit(1);
   }
+
   // The depth is rounded to the nearest multiple of 20
   depth = ((depth - 11) / 20 + 1) * 20;
   strcpy(filename, "core/hints");
   snprintf(depth_str, 9, "%u", depth);
   strncat(filename, depth_str, 99);
   strncat(filename, ".double", 99);
+  int *displacement = NULL;
+  int *countrecv = NULL;
 
-  double *total_pts = NULL;
   FILE *fp = NULL;
   fp = fopen(filename, "rb");
+  // If we can't find the file we create it.
   if (fp == NULL) {
-    // If we can't find the file we create it.
+    int send_length = 2 * length_strt;
+    double *ALL_pts = NULL;
     if (rank == 0) {
+      starting_pts = MPI_IN_PLACE;
+      displacement = (int *)malloc(sizeof(int) * world_size);
+      countrecv = (int *)malloc(sizeof(int) * world_size);
+      if (!displacement | !countrecv) {
+        printf("Error border \n");
+        exit(1);
+      }
+      displacement[0] = 0;
+      countrecv[0] = 0;
+      for (int i = 1; i < world_size; ++i) {
+        displacement[i] = send_length * (i - 1);
+        countrecv[i] = send_length;
+      };
+      send_length = 0;
+
       printf("%s not found, creating file : \n", filename);
-      total_pts =
-          (double *)malloc(length_strt * 2 * world_size * sizeof(double));
-      if (total_pts == NULL) {
+
+      ALL_pts =
+          (double *)malloc(length_strt * 2 * (world_size - 1) * sizeof(double));
+
+      if (ALL_pts == NULL) {
         printf("\e[1;31mERROR: \e[0;37mno memory allocated to save starting "
                "pts \n");
         exit(1);
       }
-    }
 
-    border_start(depth, starting_pts, M, length_strt, a0, b0, dx, nx);
-    MPI_Gather(starting_pts, length_strt * 2, MPI_DOUBLE, total_pts,
-               length_strt * 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    if (rank == 0) {
-      save(filename, total_pts, sizeof(double), world_size * 2 * length_strt);
-      free(total_pts);
+      MPI_Gatherv(starting_pts, send_length, MPI_DOUBLE, ALL_pts, countrecv,
+                  displacement, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+      free(countrecv);
+      free(displacement);
+      printf("saving hints \n");
+      putc('_', stdout);
+      save(filename, ALL_pts, sizeof(double),
+           (world_size - 1) * 2 * length_strt);
+      free(ALL_pts);
+
+    } else {
+      putc('_', stdout);
+      fflush(stdout);
+      border_start(depth, starting_pts, length_strt);
+      MPI_Gatherv(starting_pts, send_length, MPI_DOUBLE, ALL_pts, countrecv,
+                  displacement, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     }
-  } else {
-    // If we find the file we load the points.
-    fseek(fp, length_strt * sizeof(double) * 2 * rank, SEEK_SET);
-    fread(starting_pts, sizeof(double), 2 * length_strt, fp);
-    fclose(fp);
+    return 1;
   }
+  if (rank != 0) {
+    // If we find the file we load the points.
+    fseek(fp, length_strt * sizeof(double) * 2 * (rank - 1), SEEK_SET);
+    fread(starting_pts, sizeof(double), 2 * length_strt, fp);
+  }
+  fclose(fp);
+  return 0;
 }
 
-void border_start(unsigned int depth, double *starting_pts, uint8_t *M,
-                  unsigned int start, double a0, double b0, double dx,
-                  unsigned int nx) {
+void border_start(unsigned int depth, double *starting_pts,
+                  unsigned int length_start) {
   // Found random points close to the border of the Mdlbrt set
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -228,9 +316,8 @@ void border_start(unsigned int depth, double *starting_pts, uint8_t *M,
   unsigned int it = 0;
   unsigned int k = 0;
   unsigned char mindepth = depth * 0.8;
-  unsigned int i, j;
-
-  while (k < start) {
+  fflush(stdout);
+  while (k < 2 * length_start) {
     it = 0;
 
     x0 = randomdouble(-2, 0.5);
@@ -249,21 +336,22 @@ void border_start(unsigned int depth, double *starting_pts, uint8_t *M,
       it++;
     }
     if (it < depth && it >= mindepth) {
-      *(starting_pts + k * 2) = y0;
-      *(starting_pts + k * 2 + 1) = x0;
-      i = (y0 - b0) / dx;
-      j = (x0 - a0) / dx;
-      *(M + i * nx + j) = 255;
-      k++;
-      if (rank == 0) {
-        printf("\rGenerating file : %u / %u", k, start);
-        fflush(stdout);
-      }
+      *(starting_pts + k) = y0;
+      *(starting_pts + k + 1) = x0;
+      k += 2;
+      /* if (rank == 1) { */
+      /*   printf("Generating file : %u / %u", k, length_start); */
+      /*   fflush(stdout); */
+      /* } */
     }
   }
-  if (rank == 0) {
-    printf("\n");
-  }
+  /* if (rank == 1) { */
+  /*   printf("Generating file : %u / %u", k, length_start); */
+  /*   printf("\n"); */
+  /*   fflush(stdout); */
+  /* } */
+  printf("Generated points rank %i \n", rank);
+  fflush(stdout);
 }
 
 void save(const char fname[], void *data, unsigned int size,

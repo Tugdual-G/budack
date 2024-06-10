@@ -3,7 +3,7 @@
 # This is the main executable.
 # This script generate the trajectories and the images.
 
-nx=1000 # Number of pixels in vertical direction
+nx=800 # Number of pixels in vertical direction
 density=10 # Number of point per pixels, higher = less noise but slower
 maxit=400 # Maximum number of iterations
 minit=80 # Minimum number of iterations
@@ -57,26 +57,27 @@ if [[ ! -d "${ENHANCED_OUTPUT_DIR}" ]]
 fi
 
 # #------------- computing  -------------
-mpiexec $oversub "$budack" "$nx" "$maxit" "$minit" "$density" "$depth" "$RAW_OUTPUT_DIR" &
+# mpiexec $oversub "$budack" "$nx" "$maxit" "$minit" "$density" "$depth" "$RAW_OUTPUT_DIR" &
+mpiexec -n 4 "$budack" "$nx" "$maxit" "$minit" "$density" "$depth" "$RAW_OUTPUT_DIR"
 
-# Since open-MPI last version this is necesary in order to know the progress of the computation.
-START_TIME=$SECONDS
-echo 0 > /tmp/progress
-value="0"
-while [ "$value" == "0" ]
-do
-    value=$(cat /tmp/progress)
-done
-while [ "$value" != "0" ]
-do
-    ELAPSED_TIME=$((SECONDS - START_TIME))
-    printf "\r%s  %u s" "$value" "$ELAPSED_TIME"
-    value=$(cat /tmp/progress)
-    sleep 0.2
-done
-wait
+# # Since open-MPI last version this is necesary in order to know the progress of the computation.
+# START_TIME=$SECONDS
+# echo 0 > /tmp/progress
+# value="0"
+# while [ "$value" == "0" ]
+# do
+#     value=$(cat /tmp/progress)
+# done
+# while [ "$value" != "0" ]
+# do
+#     ELAPSED_TIME=$((SECONDS - START_TIME))
+#     printf "\r%s  %u s" "$value" "$ELAPSED_TIME"
+#     value=$(cat /tmp/progress)
+#     sleep 0.2
+# done
+# wait
 
-contrast="-sigmoidal-contrast 15x10%"
-magick "${RAW_OUTPUT_DIR}"image.tiff ${contrast} -rotate 90 "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
-echo "written enhanced image (sigmoidal contrast) ," "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
-nsxiv "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
+# contrast="-sigmoidal-contrast 15x10%"
+# magick "${RAW_OUTPUT_DIR}"image.tiff ${contrast} -rotate 90 "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
+# echo "written enhanced image (sigmoidal contrast) ," "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
+# nsxiv "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"

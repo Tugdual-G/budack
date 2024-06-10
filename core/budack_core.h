@@ -2,24 +2,35 @@
 #ifndef BUDACK_CORE_H_
 #define BUDACK_CORE_H_
 
+#include <stdint.h>
+
 #define MAX_PATH_LENGTH 490
 #define PARAM_FNAME "param.txt"
 #define HINTS_FNAME "hints.tiff"
 
-#include <stdint.h>
+#define PTS_MSG_SIZE 10
 
-void trajectories(unsigned int nx, unsigned int ny, double x_b[2],
-                  double y_b[2], unsigned int *M_traj0, unsigned int *M_traj1,
-                  unsigned int *M_traj2, double D, int maxit, int minit,
-                  double *starting_pts, unsigned int length_strt);
+// A define an area of reference to compute the density
+// of points.
+#define AREA 9.0
 
-void border(unsigned int depth, long int length_strt, double *starting_pts,
-            uint8_t *M, unsigned int start, double a0, double b0, double dx,
-            unsigned int nx);
+typedef struct {
+  unsigned int nit;
+  double x;
+  double y;
+  char color;
+} pts_msg;
 
-void border_start(unsigned int depth, double *starting_pts, uint8_t *M,
-                  unsigned int start, double a0, double b0, double dx,
-                  unsigned int nx);
+void draw_trajectories(uint32_t *M, double x0, double y0, unsigned int nit,
+                       double *x_b, double *y_b, unsigned int nx,
+                       unsigned int ny);
+void trajectories(double D, int maxit, int minit, double *starting_pts,
+                  unsigned int length_strt, double dx);
+
+int border(unsigned int depth, long int length_strt, double *starting_pts);
+
+void border_start(unsigned int depth, double *starting_pts,
+                  unsigned int length_start);
 
 void save(const char fname[], void *data, unsigned int size,
           unsigned int n_elements);

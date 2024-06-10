@@ -10,6 +10,10 @@ int write_tiff_16bitsRGB(const char *fname, uint16_t *R, uint16_t *G,
   size_t size = width * height;
 
   uint16_t *RGB = (uint16_t *)malloc(3 * size * sizeof(uint16_t));
+  if (!RGB) {
+    printf("Error in write_tiff_16bitsRGB \n");
+    exit(1);
+  }
   for (size_t k = 0; k < size; ++k) {
     RGB[3 * k] = R[k];
     RGB[3 * k + 1] = G[k];
@@ -21,6 +25,7 @@ int write_tiff_16bitsRGB(const char *fname, uint16_t *R, uint16_t *G,
 
   if (!tif) {
     fprintf(stderr, "Failed to open %s for writing\n", fname);
+    free(RGB);
     return 1;
   }
 
