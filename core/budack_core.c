@@ -89,6 +89,9 @@ void trajectories(double D, int maxit, int minit, double *restrict starting_pts,
   // used for rgb.
   // M_traj0 store the lowest escape time range of trajectories, and M_traj2
   // the highest.
+
+  clock_t t0, t = 0;
+
   MPI_Request req = MPI_REQUEST_NULL;
 
   // For parallel processing
@@ -116,6 +119,7 @@ void trajectories(double D, int maxit, int minit, double *restrict starting_pts,
 
   // Current min density.
   double density = 0.0;
+  write_progress(density);
   // Definition of the 3 ranges of escape time,
   int maxit0 = minit + (maxit - minit) / 3.0,
       maxit1 = minit + 2 * (maxit - minit) / 3.0;
@@ -174,13 +178,18 @@ void trajectories(double D, int maxit, int minit, double *restrict starting_pts,
       density = min3_double(density_minit, density_medit, density_maxit);
       ++npts;
       if (npts % PTS_MSG_SIZE == 0) {
+        if (rank == 1) {
+          write_progress(density);
+        }
+        t0 = clock();
         MPI_Wait(&req, MPI_STATUS_IGNORE);
-        /* MPI_Isend(sended_points + npts - PTS_MSG_SIZE, */
-        /*           sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank, */
-        /*           MPI_COMM_WORLD, &req); */
-        MPI_Bsend(sended_points + npts - PTS_MSG_SIZE,
+        t += clock() - t0;
+        MPI_Isend(sended_points + npts - PTS_MSG_SIZE,
                   sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
-                  MPI_COMM_WORLD);
+                  MPI_COMM_WORLD, &req);
+        /* MPI_Bsend(sended_points + npts - PTS_MSG_SIZE, */
+        /*           sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank, */
+        /*           MPI_COMM_WORLD); */
         npts %= 2 * PTS_MSG_SIZE;
       }
     }
@@ -190,23 +199,26 @@ void trajectories(double D, int maxit, int minit, double *restrict starting_pts,
     for (unsigned char i = npts; i < PTS_MSG_SIZE * 2; ++i) {
       sended_points[i].color = 0;
     }
+    if (rank == 1) {
+      write_progress(density);
+    }
     MPI_Wait(&req, MPI_STATUS_IGNORE);
-    /* MPI_Isend(sended_points + PTS_MSG_SIZE * (npts / PTS_MSG_SIZE), */
-    /*           sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
-     * MPI_COMM_WORLD, */
-    /*           &req); */
-    MPI_Bsend(sended_points + PTS_MSG_SIZE * (npts / PTS_MSG_SIZE),
-              sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
-              MPI_COMM_WORLD);
+    MPI_Isend(sended_points + PTS_MSG_SIZE * (npts / PTS_MSG_SIZE),
+              sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank, MPI_COMM_WORLD,
+              &req);
+    /* MPI_Bsend(sended_points + PTS_MSG_SIZE * (npts / PTS_MSG_SIZE), */
+    /*           sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank, */
+    /*           MPI_COMM_WORLD); */
   }
   // Sending a flag (0)
   sended_points[0].color = 0;
   MPI_Wait(&req, MPI_STATUS_IGNORE);
-  /* MPI_Isend(sended_points, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
+  MPI_Isend(sended_points, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
+            MPI_COMM_WORLD, &req);
+  printf("waiting time rank %i : %lf s \n", rank, (double)t / CLOCKS_PER_SEC);
+  /* MPI_Bsend(sended_points, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
    */
-  /*           MPI_COMM_WORLD, &req); */
-  MPI_Bsend(sended_points, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
-            MPI_COMM_WORLD);
+  /*           MPI_COMM_WORLD); */
 }
 
 int border(unsigned int depth, long int length_strt,
@@ -383,7 +395,7 @@ void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B) {
   }
 }
 
-void parse(int argc, char *argv[], struct Param *param) {
+void parse(int argc, char *argv[], Param *param) {
   if (argc > 1) {
     *(*param).nx = atoi(argv[1]);
     *(*param).maxit = atoi(argv[2]);
@@ -399,7 +411,7 @@ void parse(int argc, char *argv[], struct Param *param) {
   }
 }
 
-void export_param(struct Param param) {
+void export_param(Param param) {
   FILE *fptr = NULL;
   char filename[MAX_PATH_LENGTH + 21] = {'\0'};
   unsigned outdir_str_len = strlen(param.output_dir);
@@ -430,12 +442,10 @@ void write_progress(double density) {
     printf("\e[1;31mERROR: \e[0;37mcannot create progress file \n");
     exit(1);
   }
-  if (density < -1) {
-    fprintf(fptr, "0");
-  } else if (density < 0) {
-    fprintf(fptr, "gathering results ...");
-  } else {
+  if (density > -1.0) {
     fprintf(fptr, "points density %-.4f/100", 100 * density);
+  } else {
+    fprintf(fptr, "0");
   }
   fclose(fptr);
 }

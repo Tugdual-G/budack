@@ -21,6 +21,12 @@ typedef struct {
   char color;
 } pts_msg;
 
+typedef struct {
+  unsigned int *nx, *ny, *maxit, *minit, *depth;
+  double *D;
+  char *output_dir;
+} Param;
+
 void draw_trajectories(uint32_t *M, double x0, double y0, unsigned int nit,
                        double *x_b, double *y_b, unsigned int nx,
                        unsigned int ny);
@@ -37,15 +43,9 @@ void save(const char fname[], void *data, unsigned int size,
 
 void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B);
 
-struct Param {
-  unsigned int *nx, *ny, *maxit, *minit, *depth;
-  double *D;
-  char *output_dir;
-};
+void parse(int argc, char *argv[], Param *param);
 
-void parse(int argc, char *argv[], struct Param *param);
-
-void export_param(struct Param param);
+void export_param(Param param);
 
 void write_progress(double density);
 

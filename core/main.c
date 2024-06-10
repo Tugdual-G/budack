@@ -39,12 +39,12 @@ int main(int argc, char *argv[]) {
   double a[2] = {-2.3, 1.3}, b[2] = {-1.5, 1.5}; // size of the domain a+bi
   unsigned int depth = maxit;
 
-  struct Param param = {.nx = &nx,
-                        .maxit = &maxit,
-                        .minit = &minit,
-                        .D = &D,
-                        .depth = &depth,
-                        .output_dir = "/tmp/"};
+  Param param = {.nx = &nx,
+                 .maxit = &maxit,
+                 .minit = &minit,
+                 .D = &D,
+                 .depth = &depth,
+                 .output_dir = "/tmp/"};
 
   parse(argc, argv, &param);
 
@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
 
   switch (rank) {
   case 0: {
-
+    write_progress(0);
     begin = clock();
 
     double current_density = 0;
@@ -142,34 +142,32 @@ int main(int argc, char *argv[]) {
       MPI_Recv(recbuff, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE,
                MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-      if ((*recbuff).color) {
+      if (recbuff[0].color) {
         for (unsigned int i = 0; i < PTS_MSG_SIZE; ++i) {
           switch (recbuff[i].color) {
           case 'r':
             draw_trajectories(R_32, recbuff[i].x, recbuff[i].y, recbuff[i].nit,
                               a, b, nx, ny);
-
-            current_density += recbuff[i].nit * dx * dx / (AREA * D);
             break;
           case 'g':
             draw_trajectories(G_32, recbuff[i].x, recbuff[i].y, recbuff[i].nit,
                               a, b, nx, ny);
-            current_density += recbuff[i].nit * dx * dx / (AREA * D);
             break;
           case 'b':
             draw_trajectories(B_32, recbuff[i].x, recbuff[i].y, recbuff[i].nit,
                               a, b, nx, ny);
-            current_density += recbuff[i].nit * dx * dx / (AREA * D);
+            /* current_density += recbuff[i].nit * dx * dx / (AREA * D); */
             break;
           }
+          /* write_progress(current_density); */
         }
 
       } else {
         ++completion_flag;
-        printf("one process finished computing \n");
       }
     }
     free(recbuff);
+    write_progress(-2);
     break;
   }
   default: {
@@ -185,7 +183,6 @@ int main(int argc, char *argv[]) {
     uint16_t *G_16 = NULL;
     uint16_t *B_16 = NULL;
 
-    write_progress(-2.0);
     end = clock();
     t_comp = (double)(end - begin);
     t_comp = t_comp / CLOCKS_PER_SEC;
