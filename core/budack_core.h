@@ -4,11 +4,11 @@
 
 #include <stdint.h>
 
+#define PTS_MSG_SIZE 20
+#define LENGTH_STRT 50000
 #define MAX_PATH_LENGTH 490
 #define PARAM_FNAME "param.txt"
-#define HINTS_FNAME "hints.tiff"
-
-#define PTS_MSG_SIZE 20
+#define HINTS_FNAME "hintsfiles/hints"
 
 // A define an area of reference to compute the density
 // of points.
@@ -56,4 +56,5 @@ void write_progress(double density);
 
 void save_rgb_uint8(uint16_t *R, uint16_t *G, uint16_t *B, char *filename,
                     unsigned nx, unsigned ny);
-#endif // ASDF_H_
+
+#endif // BUDACK_CORE_H_

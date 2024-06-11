@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./core
 # This is the main executable.
 # This script generate the trajectories and the images.
 
@@ -31,7 +31,7 @@ budack=core/budack
 
 if [[ ! -f "${budack}" ]]
     then
-    make
+    make -C core
 fi
 
 # The computation need 3 cores to run properly
@@ -42,6 +42,9 @@ if [ $ncores -lt 3 ]
    then
     printf "Less than 3 cores available\n"
     oversub="--oversubscribe -n 4"
+elif [ $ncores -gt 5 ]
+    then
+    oversub="-n 5"
 fi
 
 # Output of the computation
@@ -57,8 +60,7 @@ if [[ ! -d "${ENHANCED_OUTPUT_DIR}" ]]
 fi
 
 # #------------- computing  -------------
-# mpiexec $oversub "$budack" "$nx" "$maxit" "$minit" "$density" "$depth" "$RAW_OUTPUT_DIR" &
-mpiexec -n 6 "$budack" "$nx" "$maxit" "$minit" "$density" "$depth" "$RAW_OUTPUT_DIR" &
+mpiexec $oversub "$budack" "$nx" "$maxit" "$minit" "$density" "$depth" "$RAW_OUTPUT_DIR" &
 
 # Since open-MPI last version this is necesary in order to know the progress of the computation.
 START_TIME=$SECONDS

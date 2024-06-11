@@ -299,7 +299,7 @@ int border(unsigned int depth, long int length_strt,
 
   // The depth is rounded to the nearest multiple of 20
   depth = ((depth - 11) / 20 + 1) * 20;
-  strcpy(filename, "core/hints");
+  strcpy(filename, HINTS_FNAME);
   snprintf(depth_str, 9, "%u", depth);
   strncat(filename, depth_str, 99);
   strncat(filename, ".double", 99);

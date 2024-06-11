@@ -9,6 +9,7 @@ tmp/
 *.png
 *.tiff
 *.o
+*.so
 *.double
 *.sh
 *.uint8
