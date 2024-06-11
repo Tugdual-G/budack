@@ -11,6 +11,7 @@ tmp/
 *.o
 *.double
 *.sh
+*.uint8
 !exe.sh
 images.sh
 budack

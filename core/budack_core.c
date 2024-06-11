@@ -362,7 +362,12 @@ int border(unsigned int depth, long int length_strt,
   if (rank != 0) {
     // If we find the file we load the points.
     fseek(fp, length_strt * sizeof(double) * 2 * (rank - 1), SEEK_SET);
-    fread(starting_pts, sizeof(double), 2 * length_strt, fp);
+    if (fread(starting_pts, sizeof(double), 2 * length_strt, fp) <
+        (size_t)(2 * length_strt)) {
+      printf("Warning, the hint file was not long enougth to fil the starting "
+             "points of rank %i \n",
+             rank);
+    }
   }
   fclose(fp);
   return 0;
