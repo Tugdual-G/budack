@@ -1,31 +1,8 @@
+#include "compileShader.h"
 #include "include/glad/glad.h"
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-const char *vertexShaderSource =
-    "#version 460 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "layout (location = 1) in vec2 aTexCoord;\n"
-    "out vec4 vertexColor;\n"
-    "out vec2 TexCoord;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "   vertexColor = vec4(1, (1+aPos.x)/2.0, (1+aPos.y)/2.0, 1.0);"
-    "   TexCoord = aTexCoord;\n"
-    "}\n";
-
-const char *fragmentShaderSource =
-    "#version 460 core\n"
-    "out vec4 FragColor;\n"
-    "in vec4 vertexColor;\n"
-    "in vec2 TexCoord;\n"
-    "uniform sampler2D ourTexture;\n"
-    "void main()\n"
-    "{\n"
-    "    FragColor = texture(ourTexture, TexCoord);\n"
-    "}\n";
 
 void processInput(GLFWwindow *window) {
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -97,44 +74,14 @@ int main() {
   printf("windows init \n");
 
   // Compile shaders
-  unsigned int vertexShader;
-  vertexShader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-  glCompileShader(vertexShader);
-  int success;
-  char infoLog[512] = {'\0'};
-  glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-    printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n");
-    printf("%s\n", infoLog);
-  }
+  unsigned int vertexShader = compileVertexShader("vertexShader.glsl");
 
-  unsigned int fragmentShader;
-  fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-  glCompileShader(fragmentShader);
-  glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-    printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n");
-    printf("%s\n", infoLog);
-  }
+  unsigned int fragmentShader = compileFragmentShader("fragmenShader.glsl");
 
-  unsigned int shaderProgram;
-  shaderProgram = glCreateProgram();
-  glAttachShader(shaderProgram, vertexShader);
-  glAttachShader(shaderProgram, fragmentShader);
-  glLinkProgram(shaderProgram);
-  glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-  if (!success) {
-    glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-    printf("ERROR::SHADER::PROGRAM::COMPILATION_FAILED\n");
-    printf("%s\n", infoLog);
-  }
+  unsigned int shaderProgram = linkShaders(vertexShader, fragmentShader);
+
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
-  printf("Shaders compiled \n");
 
   // Define a list of points
   float vertices[] = {
