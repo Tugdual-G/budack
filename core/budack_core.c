@@ -415,6 +415,40 @@ void border_start(unsigned int depth, double *starting_pts,
   fflush(stdout);
 }
 
+uint16_t max_uint16(uint16_t *in, size_t n);
+void save_rgb_uint8(uint16_t *R, uint16_t *G, uint16_t *B, char *filename,
+                    unsigned nx, unsigned ny) {
+  size_t size = nx * ny;
+  uint8_t *RGB = (uint8_t *)malloc(3 * size * sizeof(uint8_t));
+  if (!RGB) {
+    printf("Error in save_rgb_uint8, no memory allocated. \n");
+    exit(1);
+  }
+  FILE *fp = fopen(filename, "wb+");
+  if (!fp) {
+    printf("Error in save_rgb_uint8, cannot create %s \n", filename);
+    exit(1);
+  }
+
+  double Rmax = (double)max_uint16(R, size);
+  double Gmax = (double)max_uint16(G, size);
+  double Bmax = (double)max_uint16(B, size);
+
+  for (size_t k = 0; k < size; ++k) {
+    RGB[3 * k] = 255.0 * R[k] / Rmax;
+    RGB[3 * k + 1] = 255 * G[k] / Gmax;
+    RGB[3 * k + 2] = 255 * B[k] / Bmax;
+  }
+
+  if (fwrite(RGB, sizeof(uint8_t), 3 * size, fp) < (size * 3)) {
+    printf("Error writing %s \n", filename);
+  } else {
+    printf("%s written to disk. \n", filename);
+  }
+  fclose(fp);
+  free(RGB);
+}
+
 void save(const char fname[], void *data, unsigned int size,
           unsigned int n_elements) {
   FILE *fp = NULL;
@@ -497,4 +531,14 @@ void write_progress(double density) {
     fprintf(fptr, "0");
   }
   fclose(fptr);
+}
+
+uint16_t max_uint16(uint16_t *in, size_t n) {
+  double max = 0;
+  for (size_t k = 0; k < n; k++) {
+    if (*(in + k) > max) {
+      max = *(in + k);
+    }
+  }
+  return max;
 }

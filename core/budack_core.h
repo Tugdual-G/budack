@@ -54,4 +54,6 @@ void export_param(Param param);
 
 void write_progress(double density);
 
+void save_rgb_uint8(uint16_t *R, uint16_t *G, uint16_t *B, char *filename,
+                    unsigned nx, unsigned ny);
 #endif // ASDF_H_

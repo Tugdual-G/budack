@@ -146,6 +146,7 @@ int main(int argc, char *argv[]) {
       filename[outdir_str_len] = '/';
     }
     strncat(filename, "image.tiff", 11);
+    /* save_rgb_uint8(R_16, G_16, B_16, "/tmp/rgb.uint8", nx, ny); */
     write_tiff_16bitsRGB(filename, R_16, G_16, B_16, nx, ny);
     free(R_16);
     free(G_16);
