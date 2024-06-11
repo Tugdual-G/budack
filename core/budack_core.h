@@ -31,10 +31,6 @@ void draw_trajectories(uint32_t *M, double x0, double y0, unsigned int nit,
                        double *x_b, double *y_b, unsigned int nx,
                        unsigned int ny);
 
-void recieve_and_draw(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
-                      double b[2], unsigned int nx, unsigned int ny,
-                      int world_size);
-
 void trajectories(double D, unsigned int maxit, unsigned int minit,
                   double *starting_pts, unsigned int length_strt, double dx);
 

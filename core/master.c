@@ -96,3 +96,54 @@ int master(int world_size, Param param, double a[2], double b[2]) {
 
   return 0;
 }
+
+void recieve_and_draw(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
+                      double b[2], unsigned int nx, unsigned int ny,
+                      int world_size) {
+  clock_t t0, t = 0;
+  write_progress(0);
+  MPI_Request requ;
+  int completion_flag = 0;
+  pts_msg *recbuff = (pts_msg *)malloc(sizeof(pts_msg) * PTS_MSG_SIZE);
+  if (!recbuff) {
+    printf("Error: recbuff not allocated \n");
+    exit(1);
+  }
+  MPI_Recv_init(recbuff, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE,
+                MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &requ);
+
+  while (completion_flag < (world_size - 1)) {
+
+    t0 = clock();
+    MPI_Start(&requ);
+    MPI_Wait(&requ, MPI_STATUS_IGNORE);
+    /* MPI_Recv(recbuff, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, */
+    /*          MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status); */
+    t += clock() - t0;
+
+    if (recbuff[0].color) {
+      for (unsigned int i = 0; i < PTS_MSG_SIZE; ++i) {
+        switch (recbuff[i].color) {
+        case 'r':
+          draw_trajectories(R, recbuff[i].x, recbuff[i].y, recbuff[i].nit, a, b,
+                            nx, ny);
+          break;
+        case 'g':
+          draw_trajectories(G, recbuff[i].x, recbuff[i].y, recbuff[i].nit, a, b,
+                            nx, ny);
+          break;
+        case 'b':
+          draw_trajectories(B, recbuff[i].x, recbuff[i].y, recbuff[i].nit, a, b,
+                            nx, ny);
+          break;
+        }
+      }
+
+    } else {
+      ++completion_flag;
+    }
+  }
+  free(recbuff);
+  write_progress(-2);
+  printf("\nmaster waiting time : %lf s \n", (double)t / CLOCKS_PER_SEC);
+}
