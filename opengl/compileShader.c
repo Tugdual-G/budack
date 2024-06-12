@@ -12,7 +12,7 @@ unsigned int compileVertexShader(const char *sourcefname) {
     exit(1);
   }
   fseek(fp, 0, SEEK_END);
-  int lengthOfFile = ftell(fp);
+  size_t lengthOfFile = ftell(fp);
   fseek(fp, 0, SEEK_SET);
   char *source = (char *)malloc(lengthOfFile + 1);
   if (!source) {
@@ -49,7 +49,7 @@ unsigned int compileFragmentShader(const char *sourcefname) {
     exit(1);
   }
   fseek(fp, 0, SEEK_END);
-  int lengthOfFile = ftell(fp);
+  size_t lengthOfFile = ftell(fp);
   fseek(fp, 0, SEEK_SET);
   char *source = (char *)malloc(lengthOfFile + 1);
   if (!source) {

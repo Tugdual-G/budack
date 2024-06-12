@@ -13,6 +13,7 @@ tmp/
 *.double
 *.sh
 *.uint8
+main
 !exe.sh
 images.sh
 budack
