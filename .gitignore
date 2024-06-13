@@ -6,14 +6,14 @@ tmp/
 *.egg
 *.npy
 *.jpg
-*.png
+.png
 *.tiff
 *.o
 *.so
 *.double
 *.sh
 *.uint8
-*.gif
+.gif
 !live_render.gif
 main
 !exe.sh
