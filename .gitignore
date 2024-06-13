@@ -14,6 +14,7 @@ tmp/
 *.sh
 *.uint8
 *.gif
+!live_render.gif
 main
 !exe.sh
 images.sh
