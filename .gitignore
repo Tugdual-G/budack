@@ -1,12 +1,10 @@
 tmp/
 *.char
 *.uint
-*.png
 *.py[cod]
 *.egg
 *.npy
 *.jpg
-*.png
 *.tiff
 *.o
 *.so
@@ -28,6 +26,5 @@ gamma
 *.ccls-cache
 *.double
 !hints80.double
-runbudack.sh
 output/
 *.dat
