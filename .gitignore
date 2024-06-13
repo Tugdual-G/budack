@@ -9,8 +9,11 @@ tmp/
 *.png
 *.tiff
 *.o
+*.so
 *.double
 *.sh
+*.gif
+core/opengl/
 !exe.sh
 images.sh
 budack
