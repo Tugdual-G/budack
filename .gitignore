@@ -12,8 +12,10 @@ tmp/
 *.so
 *.double
 *.sh
+*.uint8
 *.gif
-core/opengl/
+!live_render.gif
+main
 !exe.sh
 images.sh
 budack
