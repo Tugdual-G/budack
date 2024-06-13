@@ -14,7 +14,7 @@ The main program create a 16 bits per channel TIFF image to favor further proces
 ImageMagick is used to apply a sigmoidal contrast to the image, but this can be done with any editing software.
 Editing the script allow to tune the parameters easily.
 
-Live render of the computing is possible using the project's branch "opengl",
+Live render of the computation is possible using the project's branch "opengl",
 this branch is implemented in a master/slave scheme, which is slower but more suited to large images ( > 10,000 x 10,000 px).
 
 ![gif example](images_examples/live_render.gif)
