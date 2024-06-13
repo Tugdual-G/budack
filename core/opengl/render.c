@@ -16,7 +16,7 @@ Render_object render_init(uint8_t *data, unsigned int width,
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  rdr_obj.window = glfwCreateWindow(800, 600, "Budack", NULL, NULL);
+  rdr_obj.window = glfwCreateWindow(width, heigth, "Budack", NULL, NULL);
   if (rdr_obj.window == NULL) {
     printf("Failed to create GLFW rdr_obj.window\n");
     glfwTerminate();
@@ -103,6 +103,9 @@ int render_loop(Render_object rdr_obj, uint8_t *data, unsigned int width,
 
   int flag;
   while (!glfwWindowShouldClose(rdr_obj.window) && flag) {
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
     flag = data_update_function(data, fargs);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, heigth, 0, GL_RGB,
@@ -110,8 +113,6 @@ int render_loop(Render_object rdr_obj, uint8_t *data, unsigned int width,
 
     processInput(rdr_obj.window);
     keep_aspect_ratio(rdr_obj.window, width, heigth);
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT);
 
     glBindTexture(GL_TEXTURE_2D, rdr_obj.texture);
 

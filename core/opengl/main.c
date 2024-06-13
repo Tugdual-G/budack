@@ -1,6 +1,7 @@
 #include "render.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 int readfile_uint8(char *filename, size_t size, uint8_t *buffer) {
   FILE *fp = fopen(filename, "rb");
@@ -32,6 +33,8 @@ int callback(uint8_t *data, void *fargs) {
   }
   args->i += 2;
   args->j += 3;
+  sleep(1);
+
   return 1;
 }
 

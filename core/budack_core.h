@@ -25,6 +25,7 @@ typedef struct {
   unsigned int *nx, *ny, *maxit, *minit, *depth;
   double *D;
   char *output_dir;
+  unsigned int cycles_per_update;
 } Param;
 
 void draw_trajectories(uint32_t *M, double x0, double y0, unsigned int nit,

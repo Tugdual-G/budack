@@ -8,6 +8,8 @@ density=20 # Number of point per pixels, higher = less noise but slower
 maxit=400 # Maximum number of iterations
 minit=60 # Minimum number of iterations
 
+#for live rendering, set to 0 to disable live rendering
+cycles_per_frame_update=200
 
 # PNG_IMAGE_NAME=nx"${nx}"_minit"${minit}"_maxit"${maxit}".png
 PNG_IMAGE_NAME=image.png
@@ -42,9 +44,9 @@ if [ $ncores -lt 3 ]
    then
     printf "Less than 3 cores available\n"
     oversub="--oversubscribe -n 4"
-elif [ $ncores -gt 5 ]
+elif [ $ncores -gt 6 ]
     then
-    oversub="-n 5"
+    oversub="-n 6"
 fi
 
 # Output of the computation
@@ -60,7 +62,7 @@ if [[ ! -d "${ENHANCED_OUTPUT_DIR}" ]]
 fi
 
 # #------------- computing  -------------
-mpiexec $oversub "$budack" "$nx" "$maxit" "$minit" "$density" "$depth" "$RAW_OUTPUT_DIR" &
+mpiexec $oversub "$budack" "$nx" "$maxit" "$minit" "$density" "$depth" "$RAW_OUTPUT_DIR" "$cycles_per_frame_update" &
 
 # Since open-MPI last version this is necesary in order to know the progress of the computation.
 START_TIME=$SECONDS
@@ -79,7 +81,7 @@ do
     ELAPSED_TIME=$((SECONDS - START_TIME))
     printf "\r%s  %u s" "$value" "$ELAPSED_TIME"
     value=$(</tmp/progress)
-    sleep 0.2
+    sleep 0.1
 done
 printf "\e[?25h"
 wait

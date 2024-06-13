@@ -14,8 +14,13 @@ const int e3 = 1000;
 
 int main(int argc, char *argv[]) {
 
-  MPI_Init(NULL, NULL); // initialize MPI environment
-  int world_size;       // number of processes
+  int provided;
+  MPI_Init_thread(NULL, NULL, MPI_THREAD_FUNNELED, &provided);
+  if (provided != MPI_THREAD_FUNNELED) {
+    printf("Warning MPI did not provide MPI_THREAD_FUNNELED\n");
+  }
+
+  int world_size; // number of processes
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -30,18 +35,21 @@ int main(int argc, char *argv[]) {
 
   unsigned int nx = 1 * e3; // Grid size x axis
   unsigned int maxit = 200; // maximum number of iteration per point
-  unsigned int minit = 0;   // minimum iteration per point
+  unsigned int minit = 20;  // minimum iteration per point
   double D = 8; // Points per pixels of interest (i.e. number of points
                 // independant of the domain size), higher = less noise
   double a[2] = {-2.3, 1.3}, b[2] = {-1.5, 1.5}; // size of the domain a+bi
   unsigned int depth = maxit;
 
-  Param param = {.nx = &nx,
-                 .maxit = &maxit,
-                 .minit = &minit,
-                 .D = &D,
-                 .depth = &depth,
-                 .output_dir = "/tmp/"};
+  Param param = {
+      .nx = &nx,
+      .maxit = &maxit,
+      .minit = &minit,
+      .D = &D,
+      .depth = &depth,
+      .output_dir = "/tmp/",
+      .cycles_per_update = 0,
+  };
 
   parse(argc, argv, &param);
 

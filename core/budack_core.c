@@ -433,13 +433,37 @@ void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B) {
 }
 
 void parse(int argc, char *argv[], Param *param) {
-  if (argc > 1) {
-    *(*param).nx = atoi(argv[1]);
-    *(*param).maxit = atoi(argv[2]);
-    *(*param).minit = atoi(argv[3]);
-    *(*param).D = (double)atoi(argv[4]);
-    *(*param).depth = atoi(argv[5]);
+  switch (argc) {
+
+  case 8:
+    (*param).cycles_per_update = atoi(argv[7]);
+    __attribute__((fallthrough)); // Shut down the fallthrough warning
+
+  case 7:
     (*param).output_dir = argv[6];
+    __attribute__((fallthrough));
+
+  case 6:
+    *(*param).depth = atoi(argv[5]);
+
+    __attribute__((fallthrough));
+
+  case 5:
+    *(*param).D = (double)atoi(argv[4]);
+
+    __attribute__((fallthrough));
+
+  case 4:
+    *(*param).minit = atoi(argv[3]);
+
+    __attribute__((fallthrough));
+
+  case 3:
+    *(*param).maxit = atoi(argv[2]);
+
+    __attribute__((fallthrough));
+  case 2:
+    *(*param).nx = atoi(argv[1]);
   }
   if (strlen((*param).output_dir) > MAX_PATH_LENGTH) {
     printf("\e[1;31mERROR: \e[0;37 output directory path is more than 490 "

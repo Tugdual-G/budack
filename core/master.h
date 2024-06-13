@@ -1,10 +1,30 @@
 #ifndef MASTER_H_
 #define MASTER_H_
 #include "budack_core.h"
+#include <mpi.h>
+#include <stdlib.h>
+
+typedef struct {
+  int world_size;
+  unsigned int nx, ny, n_it;
+  MPI_Request *requ;
+  pts_msg *recbuff;
+  uint32_t *R, *G, *B;
+  double *a, *b;
+} Fargs;
 
 int master(int world_size, Param param, double a[2], double b[2]);
+
+void recieve_and_render(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
+                        double b[2], unsigned int nx, unsigned int ny,
+                        int world_size, unsigned int cycles_per_update);
 
 void recieve_and_draw(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
                       double b[2], unsigned int nx, unsigned int ny,
                       int world_size);
+
+void draw_gray_into_RGB_buffer_8(uint8_t *RGB, uint32_t *gray1, uint32_t *gray2,
+                                 uint32_t *gray3, size_t size_gray);
+
+int callback(uint8_t *data, void *fargs);
 #endif // MASTER_H_
