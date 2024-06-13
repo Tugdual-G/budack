@@ -1,6 +1,9 @@
 tmp/
 *.char
 *.uint
+*.png
+!zoom1.png
+!crop2.png
 *.py[cod]
 *.egg
 *.npy
@@ -15,14 +18,8 @@ tmp/
 !live_render.gif
 main
 !exe.sh
-images.sh
 budack
 gamma
-!zoom.png
-!zoom1.png
-!trajhd.png
-!colors.png
-!colors1.png
 *.ccls-cache
 *.double
 !hints80.double
