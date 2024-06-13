@@ -94,6 +94,5 @@ unsigned int linkShaders(unsigned int v_shader, unsigned int f_shader) {
     printf("ERROR::SHADER::PROGRAM::COMPILATION_FAILED\n");
     printf("%s\n", infoLog);
   }
-  printf("Shaders compiled \n");
   return shaderProgram;
 }

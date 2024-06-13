@@ -30,7 +30,6 @@ Render_object render_init(uint8_t *data, unsigned int width,
 
   keep_aspect_ratio(rdr_obj.window, width, heigth);
   glfwSetFramebufferSizeCallback(rdr_obj.window, framebuffer_size_callback);
-  printf("windows init \n");
 
   // Compile shaders
   unsigned int vertexShader = compileVertexShader("vertexShader.glsl");

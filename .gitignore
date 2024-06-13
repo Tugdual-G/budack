@@ -13,6 +13,7 @@ tmp/
 *.double
 *.sh
 *.uint8
+*.gif
 main
 !exe.sh
 images.sh
