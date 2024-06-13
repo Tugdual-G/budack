@@ -87,7 +87,7 @@ printf "\e[?25h"
 wait
 
 
-contrast="-sigmoidal-contrast 10x8%"
+contrast="-sigmoidal-contrast 10x10%"
 magick "${RAW_OUTPUT_DIR}"image.tiff ${contrast} -rotate 90 "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
 echo "written enhanced image (sigmoidal contrast) ," "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
 nsxiv "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"

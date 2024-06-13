@@ -89,9 +89,12 @@ Render_object render_init(uint8_t *data, unsigned int width,
                   GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+  glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB, width, heigth);
+
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, heigth, 0, GL_RGB,
                GL_UNSIGNED_BYTE, data);
   glGenerateMipmap(GL_TEXTURE_2D);
+
   return rdr_obj;
 }
 
@@ -102,18 +105,17 @@ int render_loop(Render_object rdr_obj, uint8_t *data, unsigned int width,
 
   int flag;
   while (!glfwWindowShouldClose(rdr_obj.window) && flag) {
+    keep_aspect_ratio(rdr_obj.window, width, heigth);
+    processInput(rdr_obj.window);
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     flag = data_update_function(data, fargs);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, heigth, 0, GL_RGB,
-                 GL_UNSIGNED_BYTE, data);
-
-    processInput(rdr_obj.window);
-    keep_aspect_ratio(rdr_obj.window, width, heigth);
-
     glBindTexture(GL_TEXTURE_2D, rdr_obj.texture);
+
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, heigth, GL_RGB,
+                    GL_UNSIGNED_BYTE, data);
 
     // render container
     glUseProgram(rdr_obj.shader_program);
