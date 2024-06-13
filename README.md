@@ -3,7 +3,7 @@
 
 ([click to explore the details](https://raw.githubusercontent.com/Tugdual-G/budack/main/images_exemples/trajhd.png))
 
-![alt text](images_exemples/zoom1.png)
+![alt text](images_examples/zoom1.png)
 
 ## Usage
 Just try the default parameters by running (see requirements),
@@ -13,6 +13,11 @@ Just try the default parameters by running (see requirements),
 The main program create a 16 bits per channel TIFF image to favor further processing.
 ImageMagick is used to apply a sigmoidal contrast to the image, but this can be done with any editing software.
 Editing the script allow to tune the parameters easily.
+
+Live render of the computing is possible using the project's branch "opengl",
+this branch is implemented in a master/slave scheme, which is slower but more suited to large images ( > 10,000 x 10,000 px).
+
+![gif example](images_examples/live_render.gif)
 
 ### Parameters
 - The program use an uncommon parameter which greatly change the appearance of the generated images by fixing different depth zones for the starting points.
