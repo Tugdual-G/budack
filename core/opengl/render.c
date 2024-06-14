@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 Render_object render_init(uint8_t *data, unsigned int width,
-                          unsigned int heigth, char nchannels) {
+                          unsigned int height, char nchannels) {
 
   Render_object rdr_obj;
   // Init Window
@@ -16,7 +16,7 @@ Render_object render_init(uint8_t *data, unsigned int width,
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  rdr_obj.window = glfwCreateWindow(width, heigth, "Budack", NULL, NULL);
+  rdr_obj.window = glfwCreateWindow(width, height, "Budack", NULL, NULL);
   if (rdr_obj.window == NULL) {
     printf("Failed to create GLFW rdr_obj.window\n");
     glfwTerminate();
@@ -28,7 +28,7 @@ Render_object render_init(uint8_t *data, unsigned int width,
     exit(1);
   }
 
-  keep_aspect_ratio(rdr_obj.window, width, heigth);
+  keep_aspect_ratio(rdr_obj.window, width, height);
   glfwSetFramebufferSizeCallback(rdr_obj.window, framebuffer_size_callback);
 
   // Compile shaders
@@ -73,7 +73,7 @@ Render_object render_init(uint8_t *data, unsigned int width,
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
 
-  // Texture attrib
+  // Vertex attrib
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         (void *)(3 * sizeof(float)));
   glEnableVertexAttribArray(1);
@@ -89,9 +89,9 @@ Render_object render_init(uint8_t *data, unsigned int width,
                   GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB, width, heigth);
+  glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB, width, height);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, heigth, 0, GL_RGB,
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
                GL_UNSIGNED_BYTE, data);
   glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -99,13 +99,13 @@ Render_object render_init(uint8_t *data, unsigned int width,
 }
 
 int render_loop(Render_object rdr_obj, uint8_t *data, unsigned int width,
-                unsigned int heigth,
+                unsigned int height,
                 int (*data_update_function)(uint8_t *data, void *fargs),
                 void *fargs) {
 
   int flag;
   while (!glfwWindowShouldClose(rdr_obj.window) && flag) {
-    keep_aspect_ratio(rdr_obj.window, width, heigth);
+    keep_aspect_ratio(rdr_obj.window, width, height);
     processInput(rdr_obj.window);
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -114,7 +114,7 @@ int render_loop(Render_object rdr_obj, uint8_t *data, unsigned int width,
 
     glBindTexture(GL_TEXTURE_2D, rdr_obj.texture);
 
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, heigth, GL_RGB,
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGB,
                     GL_UNSIGNED_BYTE, data);
 
     // render container
