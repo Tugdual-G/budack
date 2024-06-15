@@ -81,6 +81,11 @@ int master(int world_size, Param param, double a[2], double b[2]) {
     printf("\n Error, no memory allocated for RGB arrays \n");
     exit(1);
   }
+
+  /* save("r.uint32", R_32, sizeof(uint32_t), nx * ny); */
+  /* save("g.uint32", G_32, sizeof(uint32_t), nx * ny); */
+  /* save("b.uint32", B_32, sizeof(uint32_t), nx * ny); */
+
   normalize_32_to_16bits(R_32, R_16, nx * ny);
   free(R_32);
   normalize_32_to_16bits(G_32, G_16, nx * ny);
@@ -95,7 +100,7 @@ int master(int world_size, Param param, double a[2], double b[2]) {
     filename[outdir_str_len] = '/';
   }
   strncat(filename, "image.tiff", 11);
-  /* save_rgb_uint8(R_16, G_16, B_16, "/tmp/rgb.uint8", nx, ny); */
+
   write_tiff_16bitsRGB(filename, R_16, G_16, B_16, nx, ny);
   free(R_16);
   free(G_16);
@@ -158,10 +163,25 @@ void recieve_and_draw(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
 void recieve_and_render(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
                         double b[2], unsigned int nx, unsigned int ny,
                         int world_size, unsigned int cycles_per_update) {
-  uint8_t *RGB = (uint8_t *)calloc(nx * ny * 3, sizeof(uint8_t));
-  if (!RGB) {
-    printf("Error: RGB not allocated in recieve_and_render \n");
-    exit(1);
+
+  unsigned int redu_fact = 1;
+  uint32_t *R_reduced = NULL, *G_reduced = NULL, *B_reduced = NULL;
+  if (nx > MAX_RENDER_SIZE * 2 - 1) {
+    redu_fact = nx / MAX_RENDER_SIZE;
+    R_reduced =
+        (uint32_t *)calloc(nx / redu_fact * ny / redu_fact, sizeof(uint32_t));
+    G_reduced =
+        (uint32_t *)calloc(nx / redu_fact * ny / redu_fact, sizeof(uint32_t));
+    B_reduced =
+        (uint32_t *)calloc(nx / redu_fact * ny / redu_fact, sizeof(uint32_t));
+    if (!B_reduced | !R_reduced | !G_reduced) {
+      printf("\n Error, no memory allocated for reduced RGB sum \n");
+      exit(1);
+    }
+  } else {
+    R_reduced = R;
+    G_reduced = G;
+    B_reduced = B;
   }
 
   /* clock_t t0, t = 0; */
@@ -175,56 +195,81 @@ void recieve_and_render(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
   MPI_Recv_init(recbuff, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE,
                 MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &requ);
 
+  Render_object rdr_obj = {
+      .width = nx / redu_fact,
+      .height = ny / redu_fact,
+      .Runit = 0,
+      .Gunit = 1,
+      .Bunit = 2,
+      .Rmax = MAX_UINT,
+      .Gmax = MAX_UINT,
+      .Bmax = MAX_UINT,
+      .R = R_reduced,
+      .G = G_reduced,
+      .B = B_reduced,
+  };
+
   Fargs args = {
       .world_size = world_size,
       .nx = nx,
       .ny = ny,
+      .nx_redu = nx / redu_fact,
+      .ny_redu = ny / redu_fact,
       .n_it = cycles_per_update,
       .requ = &requ,
       .recbuff = recbuff,
+      .a = a,
+      .b = b,
+      .Rmax = &rdr_obj.Rmax,
+      .Gmax = &rdr_obj.Gmax,
+      .Bmax = &rdr_obj.Bmax,
       .R = R,
       .G = G,
       .B = B,
-      .a = a,
-      .b = b,
+      .redu_fact = redu_fact,
   };
 
-  Render_object rdr_obj = render_init(RGB, nx, ny, 3);
-  render_loop(rdr_obj, RGB, nx, ny, callback, &args);
+  render_init(&rdr_obj);
+  render_loop(&rdr_obj, callback, &args);
   render_finalize(&rdr_obj);
   free(recbuff);
-  free(RGB);
   write_progress(-2);
+  printf("\n Rmax = %u , Gmax = %u, Bmax = %u \n", *args.Rmax, *args.Gmax,
+         *args.Bmax);
   /* printf("\nmaster waiting time : %lf s \n", (double)t / CLOCKS_PER_SEC); */
 }
 
-int callback(uint8_t *data, void *fargs) {
-  Fargs *args = (Fargs *)fargs;
-  unsigned int it = 0;
+void reduce(uint32_t *in, uint32_t *out, unsigned int in_nx, unsigned int in_ny,
+            unsigned int redu_fact);
+void max32(uint32_t *X, size_t n, uint32_t *max);
+int callback(uint32_t *R_reduced, uint32_t *G_reduced, uint32_t *B_reduced,
+             void *fargs) {
+
   static int completion_flag = 0;
+
+  Fargs *args = (Fargs *)fargs;
+  uint32_t *R = args->R, *G = args->G, *B = args->B;
   pts_msg *rec = args->recbuff;
 
+  unsigned int it = 0;
   while ((completion_flag < (args->world_size - 1)) && (it < args->n_it)) {
     ++it;
     MPI_Start(args->requ);
     MPI_Wait(args->requ, MPI_STATUS_IGNORE);
-    /* MPI_Recv(recbuff, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, */
-    /*          MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-     */
     if (rec[0].color) {
       for (unsigned int i = 0; i < PTS_MSG_SIZE; ++i) {
         switch (rec[i].color) {
         case 'r':
-          draw_trajectories(args->R, rec[i].x, rec[i].y, rec[i].nit, args->a,
-                            args->b, args->nx, args->ny);
+          draw_trajectories(R, rec[i].x, rec[i].y, rec[i].nit, args->a, args->b,
+                            args->nx, args->ny);
           break;
         case 'g':
-          draw_trajectories(args->G, rec[i].x, rec[i].y, rec[i].nit, args->a,
-                            args->b, args->nx, args->ny);
+          draw_trajectories(G, rec[i].x, rec[i].y, rec[i].nit, args->a, args->b,
+                            args->nx, args->ny);
           break;
         case 'b':
-          draw_trajectories(args->B, rec[i].x, rec[i].y, rec[i].nit, args->a,
-                            args->b, args->nx, args->ny);
+          draw_trajectories(B, rec[i].x, rec[i].y, rec[i].nit, args->a, args->b,
+                            args->nx, args->ny);
           break;
         }
       }
@@ -233,66 +278,48 @@ int callback(uint8_t *data, void *fargs) {
       ++completion_flag;
     }
   }
-  draw_gray_into_RGB_buffer_8(data, args->R, args->G, args->B,
-                              (args->nx) * (args->ny));
 
+  if (args->redu_fact > 1) {
+    reduce(R, R_reduced, args->nx, args->ny, args->redu_fact);
+    reduce(G, G_reduced, args->nx, args->ny, args->redu_fact);
+    reduce(B, B_reduced, args->nx, args->ny, args->redu_fact);
+  }
+  max32(R_reduced, args->nx_redu * args->ny_redu, args->Rmax);
+  max32(G_reduced, args->nx_redu * args->ny_redu, args->Gmax);
+  max32(B_reduced, args->nx_redu * args->ny_redu, args->Bmax);
   return (completion_flag != (args->world_size - 1));
 }
 
-double sigmoidal_contrast(double alpha, double beta, double x);
-void draw_gray_into_RGB_buffer_8(uint8_t *RGB, uint32_t *gray1, uint32_t *gray2,
-                                 uint32_t *gray3, size_t size_gray) {
-
-  uint32_t max1 = 0, max2 = 0, max3 = 0;
-
-  {
-    for (size_t k = 0; k < size_gray; ++k) {
-      if (gray1[k] > max1) {
-        max1 = gray1[k];
-      }
+void max32(uint32_t *X, size_t n, uint32_t *max) {
+  *max = 0;
+  for (size_t i = 0; i < n; ++i) {
+    if (X[i] > *max) {
+      *max = X[i];
     }
-
-    for (size_t k = 0; k < size_gray; ++k) {
-      if (gray2[k] > max2) {
-        max2 = gray2[k];
-      }
-    }
-
-    for (size_t k = 0; k < size_gray; ++k) {
-      if (gray3[k] > max3) {
-        max3 = gray3[k];
-      }
-    }
-  }
-
-  for (size_t k = 0; k < size_gray; ++k) {
-    RGB[3 * k] = 255.0 * sigmoidal_contrast(0.05, 10, gray1[k] / (double)max1);
-    RGB[3 * k + 1] =
-        255.0 * sigmoidal_contrast(0.1, 10, gray2[k] / (double)max2);
-    RGB[3 * k + 2] =
-        255.0 * sigmoidal_contrast(0.1, 10, gray3[k] / (double)max3);
   }
 }
 
-double sigmoidal_contrast(double alpha, double beta, double x) {
-  // x must be normalized to 1
-  return (1 / (1 + exp(beta * (alpha - x))) - 1 / (1 + exp(beta * (alpha)))) /
-         (1 / (1 + exp(beta * (alpha - 1))) - 1 / (1 + exp(beta * alpha)));
-}
+void reduce(uint32_t *in, uint32_t *out, unsigned int in_nx, unsigned int in_ny,
+            unsigned int redu_fact) {
 
-void mirror(unsigned int ny, unsigned int nx, uint8_t *X) {
-  // Ensure symetry and add density by adding a mirrored version
-  // of the image to itself.
-  unsigned long k;
-  unsigned int i, j;
-  uint8_t b;
-
-  for (i = 0; i < ny; i++) {
-    for (j = 0; j < nx; j++) {
-      k = (unsigned long)ny * nx - (1 + i) * nx + j;
-      b = X[i * nx + j];
-      X[i * nx + j] += X[k];
-      X[k] += b;
+  unsigned int out_nx = in_nx / redu_fact, out_ny = in_ny / redu_fact,
+               area = redu_fact * redu_fact;
+  for (unsigned int i_out = 0; i_out < out_ny; ++i_out) {
+    for (unsigned int j_out = 0; j_out < out_nx; ++j_out) {
+      out[i_out * out_nx + j_out] = 0;
+    }
+    for (unsigned int i_in = i_out * redu_fact; i_in < (i_out + 1) * redu_fact;
+         ++i_in) {
+      for (unsigned int j_out = 0; j_out < out_nx; ++j_out) {
+        for (unsigned int j_in = j_out * redu_fact;
+             j_in < (j_out + 1) * redu_fact; ++j_in) {
+          out[i_out * out_nx + j_out] += in[i_in * in_nx + j_in];
+        }
+      }
+      /* out[i_out * out_nx + j_out] /= redu_fact * redu_fact; */
+    }
+    for (unsigned int j_out = 0; j_out < out_nx; ++j_out) {
+      out[i_out * out_nx + j_out] /= area;
     }
   }
 }

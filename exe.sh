@@ -9,7 +9,7 @@ maxit=400 # Maximum number of iterations
 minit=60 # Minimum number of iterations
 
 #for live rendering, set to 0 to disable live rendering
-cycles_per_frame_update=100
+cycles_per_frame_update=200
 
 # PNG_IMAGE_NAME=nx"${nx}"_minit"${minit}"_maxit"${maxit}".png
 PNG_IMAGE_NAME=image.png
@@ -18,7 +18,7 @@ PNG_IMAGE_NAME=image.png
 RAW_OUTPUT_DIR=/tmp/budack/
 
 # Output directory of the enhanced images
-ENHANCED_OUTPUT_DIR=/tmp/
+ENHANCED_OUTPUT_DIR=/tmp/budack/
 
 
 # This will change greatly the apparence of the images,
@@ -90,4 +90,7 @@ wait
 contrast="-sigmoidal-contrast 10x10%"
 magick "${RAW_OUTPUT_DIR}"image.tiff ${contrast} -rotate 90 "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
 echo "written enhanced image (sigmoidal contrast) ," "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
-nsxiv "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
+if [[ $cycles_per_frame_update -eq 0 ]]
+   then
+    xdg-open "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
+fi

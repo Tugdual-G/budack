@@ -96,3 +96,54 @@ unsigned int linkShaders(unsigned int v_shader, unsigned int f_shader) {
   }
   return shaderProgram;
 }
+
+unsigned int computeShaderProgram(const char *sourcefname) {
+  FILE *fp = fopen(sourcefname, "rb+");
+  if (!fp) {
+    printf("error: cannot open fragment shader source file \n");
+    exit(1);
+  }
+  fseek(fp, 0, SEEK_END);
+  size_t lengthOfFile = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+  char *source = (char *)malloc(lengthOfFile + 1);
+  if (!source) {
+    printf("error source \n");
+    exit(1);
+  }
+  if (fread(source, 1, lengthOfFile, fp) < lengthOfFile) {
+    printf("error loading fragment shader source \n");
+    exit(1);
+  }
+  source[lengthOfFile] = '\0';
+  const char *s = source;
+
+  int success;
+  char infoLog[512] = {'\0'};
+
+  unsigned int compute;
+  // compute shader
+  compute = glCreateShader(GL_COMPUTE_SHADER);
+  glShaderSource(compute, 1, &s, NULL);
+  glCompileShader(compute);
+  glGetShaderiv(compute, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    glGetShaderInfoLog(compute, 512, NULL, infoLog);
+    printf("ERROR::SHADER::COMPUTE::COMPILATION_FAILED\n");
+    printf("%s\n", infoLog);
+  }
+
+  // shader Program
+  unsigned int compute_program = glCreateProgram();
+  glAttachShader(compute_program, compute);
+  glLinkProgram(compute_program);
+  glGetProgramiv(compute_program, GL_LINK_STATUS, &success);
+  if (!success) {
+    glGetProgramInfoLog(compute_program, 512, NULL, infoLog);
+    printf("ERROR::SHADER::COMPUTE::PROGRAM::COMPILATION_FAILED\n");
+    printf("%s\n", infoLog);
+  }
+  fclose(fp);
+  glDeleteShader(compute);
+  return compute_program;
+}

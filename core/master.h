@@ -6,11 +6,12 @@
 
 typedef struct {
   int world_size;
-  unsigned int nx, ny, n_it;
+  unsigned int nx, ny, n_it, redu_fact, nx_redu, ny_redu;
   MPI_Request *requ;
   pts_msg *recbuff;
-  uint32_t *R, *G, *B;
   double *a, *b;
+  uint32_t *Rmax, *Gmax, *Bmax;
+  uint32_t *R, *G, *B;
 } Fargs;
 
 int master(int world_size, Param param, double a[2], double b[2]);
@@ -26,5 +27,5 @@ void recieve_and_draw(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
 void draw_gray_into_RGB_buffer_8(uint8_t *RGB, uint32_t *gray1, uint32_t *gray2,
                                  uint32_t *gray3, size_t size_gray);
 
-int callback(uint8_t *data, void *fargs);
+int callback(uint32_t *R, uint32_t *G, uint32_t *B, void *fargs);
 #endif // MASTER_H_
