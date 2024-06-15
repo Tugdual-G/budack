@@ -240,7 +240,7 @@ void recieve_and_render(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
 }
 
 void reduce(uint32_t *in, uint32_t *out, unsigned int in_nx, unsigned int in_ny,
-            unsigned int redu_fact);
+            unsigned int redu_fact, uint32_t *max);
 void max32(uint32_t *X, size_t n, uint32_t *max);
 int callback(uint32_t *R_reduced, uint32_t *G_reduced, uint32_t *B_reduced,
              void *fargs) {
@@ -280,13 +280,14 @@ int callback(uint32_t *R_reduced, uint32_t *G_reduced, uint32_t *B_reduced,
   }
 
   if (args->redu_fact > 1) {
-    reduce(R, R_reduced, args->nx, args->ny, args->redu_fact);
-    reduce(G, G_reduced, args->nx, args->ny, args->redu_fact);
-    reduce(B, B_reduced, args->nx, args->ny, args->redu_fact);
+    reduce(R, R_reduced, args->nx, args->ny, args->redu_fact, args->Rmax);
+    reduce(G, G_reduced, args->nx, args->ny, args->redu_fact, args->Gmax);
+    reduce(B, B_reduced, args->nx, args->ny, args->redu_fact, args->Bmax);
+  } else {
+    max32(R_reduced, args->nx_redu * args->ny_redu, args->Rmax);
+    max32(G_reduced, args->nx_redu * args->ny_redu, args->Gmax);
+    max32(B_reduced, args->nx_redu * args->ny_redu, args->Bmax);
   }
-  max32(R_reduced, args->nx_redu * args->ny_redu, args->Rmax);
-  max32(G_reduced, args->nx_redu * args->ny_redu, args->Gmax);
-  max32(B_reduced, args->nx_redu * args->ny_redu, args->Bmax);
   return (completion_flag != (args->world_size - 1));
 }
 
@@ -300,8 +301,9 @@ void max32(uint32_t *X, size_t n, uint32_t *max) {
 }
 
 void reduce(uint32_t *in, uint32_t *out, unsigned int in_nx, unsigned int in_ny,
-            unsigned int redu_fact) {
+            unsigned int redu_fact, uint32_t *max) {
 
+  *max = 0;
   unsigned int out_nx = in_nx / redu_fact, out_ny = in_ny / redu_fact,
                area = redu_fact * redu_fact;
   for (unsigned int i_out = 0; i_out < out_ny; ++i_out) {
@@ -320,6 +322,9 @@ void reduce(uint32_t *in, uint32_t *out, unsigned int in_nx, unsigned int in_ny,
     }
     for (unsigned int j_out = 0; j_out < out_nx; ++j_out) {
       out[i_out * out_nx + j_out] /= area;
+      if (out[i_out * out_nx + j_out] > *max) {
+        *max = out[i_out * out_nx + j_out];
+      }
     }
   }
 }
