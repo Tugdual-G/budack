@@ -97,7 +97,7 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Request req = MPI_REQUEST_NULL;
-  pts_msg sended_points[2 * PTS_MSG_SIZE];
+  Pts_msg sended_points[2 * PTS_MSG_SIZE];
 
   // Locating the points in space
   // y for imaginary points
@@ -190,7 +190,7 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
         t0 = clock();
         MPI_Wait(&req, MPI_STATUS_IGNORE);
         MPI_Isend(sended_points + npts - PTS_MSG_SIZE,
-                  sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
+                  sizeof(Pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
                   MPI_COMM_WORLD, &req);
         t += clock() - t0;
         npts %= 2 * PTS_MSG_SIZE;
@@ -199,7 +199,7 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
   }
 
   if (npts % PTS_MSG_SIZE != 0) {
-    for (unsigned char i = npts; i < PTS_MSG_SIZE * 2; ++i) {
+    for (unsigned int i = npts; i < PTS_MSG_SIZE * 2; ++i) {
       sended_points[i].color = 0;
     }
     if (rank == 1) {
@@ -207,13 +207,13 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
     }
     MPI_Wait(&req, MPI_STATUS_IGNORE);
     MPI_Isend(sended_points + PTS_MSG_SIZE * (npts / PTS_MSG_SIZE),
-              sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank, MPI_COMM_WORLD,
+              sizeof(Pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank, MPI_COMM_WORLD,
               &req);
   }
   // Sending end flag (0)
   sended_points[0].color = 0;
   MPI_Wait(&req, MPI_STATUS_IGNORE);
-  MPI_Isend(sended_points, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
+  MPI_Isend(sended_points, sizeof(Pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
             MPI_COMM_WORLD, &req);
   printf("\nslave waiting time rank %i : %lf s \n", rank,
          (double)t / CLOCKS_PER_SEC);

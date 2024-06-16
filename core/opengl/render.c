@@ -1,11 +1,11 @@
 #include "render.h"
-/* #include "../master.h" */
 #include "compileShader.h"
 #include "display_window.h"
 #include "include/glad/glad.h" // glad should be included before glfw3
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 GLenum glCheckError_(const char *file, int line);
 #define glCheckError() glCheckError_(__FILE__, __LINE__)
@@ -36,17 +36,11 @@ void render_init(Render_object *rdr_obj) {
   unsigned int fragmentShader =
       compileFragmentShader("shaders/rgbassemble.glsl");
   rdr_obj->shader_program = linkShaders(vertexShader, fragmentShader);
-  rdr_obj->compute_program = computeShaderProgram("shaders/computeshader.glsl");
+  rdr_obj->compute_program = computeShaderProgram("shaders/iterateshader.glsl");
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
 
   glUseProgram(rdr_obj->shader_program);
-  unsigned int Rmaxid = glGetUniformLocation(rdr_obj->shader_program, "Rmax");
-  unsigned int Gmaxid = glGetUniformLocation(rdr_obj->shader_program, "Gmax");
-  unsigned int Bmaxid = glGetUniformLocation(rdr_obj->shader_program, "Bmax");
-  glUniform1ui(Rmaxid, rdr_obj->Rmax);
-  glUniform1ui(Gmaxid, rdr_obj->Gmax);
-  glUniform1ui(Bmaxid, rdr_obj->Bmax);
 
   glfwSetFramebufferSizeCallback(rdr_obj->window, framebuffer_size_callback);
   keep_aspect_ratio(rdr_obj->window, rdr_obj->width, rdr_obj->height);
@@ -91,62 +85,53 @@ void render_init(Render_object *rdr_obj) {
   // Loading texture
   set_image2D(rdr_obj->Runit, &rdr_obj->R_image_ID, rdr_obj->width,
               rdr_obj->height, rdr_obj->R);
+
   set_image2D(rdr_obj->Gunit, &rdr_obj->G_image_ID, rdr_obj->width,
               rdr_obj->height, rdr_obj->G);
+
   set_image2D(rdr_obj->Bunit, &rdr_obj->B_image_ID, rdr_obj->width,
               rdr_obj->height, rdr_obj->B);
 
-  /* glUseProgram(rdr_obj->compute_program); */
-  /* glDispatchCompute((unsigned int)rdr_obj->width, (unsigned
-   * int)rdr_obj->height, 1); */
-  /* // make sure writing to image has finished before read */
-  /* glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT); */
+  glCheckError();
+
+  // Loading starting points
+  set_ssbo(rdr_obj->recbuff, rdr_obj->recbuff_length * sizeof(Pts_msg),
+           rdr_obj->recbuff_unit, &rdr_obj->recbuff_ssbo);
+
+  glUseProgram(rdr_obj->compute_program);
+  unsigned int dxloc = 143;
+  dxloc = glGetUniformLocation(rdr_obj->compute_program, "dx");
+  glUniform1f(dxloc, (float)(rdr_obj->dx));
   glCheckError();
 }
 
 int render_loop(Render_object *rdr_obj,
-                int (*data_update_function)(uint32_t *R, uint32_t *G,
-                                            uint32_t *B, void *fargs),
+                int (*data_update_function)(Render_object *rdr_obj,
+                                            void *fargs),
                 void *fargs) {
-
-  int flag = 1;
   glClearColor(0.0, 0.0, 0.0, 0.0);
   glUseProgram(rdr_obj->shader_program);
-  unsigned int Rmaxid = glGetUniformLocation(rdr_obj->shader_program, "Rmax");
-  unsigned int Gmaxid = glGetUniformLocation(rdr_obj->shader_program, "Gmax");
-  unsigned int Bmaxid = glGetUniformLocation(rdr_obj->shader_program, "Bmax");
-  glUniform1ui(Rmaxid, rdr_obj->Rmax);
-  glUniform1ui(Gmaxid, rdr_obj->Gmax);
-  glUniform1ui(Bmaxid, rdr_obj->Bmax);
-  /* printf("Rmax = %u\n", rdr_obj->Rmax); */
-  /* printf("Gmax = %u\n", rdr_obj->Gmax); */
-  /* printf("Bmax = %u\n", rdr_obj->Bmax); */
-
-  while (!glfwWindowShouldClose(rdr_obj->window) && flag) {
+  glCheckError();
+  int flag = 1;
+  int it = 0;
+  while (!glfwWindowShouldClose(rdr_obj->window) && flag && it < 500) {
     keep_aspect_ratio(rdr_obj->window, rdr_obj->width, rdr_obj->height);
-    /* processInput(rdr_obj->window); */
+    processInput(rdr_obj->window);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    flag = data_update_function(rdr_obj->R, rdr_obj->G, rdr_obj->B, fargs);
-    glUniform1ui(Rmaxid, rdr_obj->Rmax);
-    glUniform1ui(Gmaxid, rdr_obj->Gmax);
-    glUniform1ui(Bmaxid, rdr_obj->Bmax);
+    glCheckError();
 
-    glBindTexture(GL_TEXTURE_2D, rdr_obj->R_image_ID);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rdr_obj->width, rdr_obj->height,
-                    GL_RED_INTEGER, GL_UNSIGNED_INT, rdr_obj->R);
-    glBindTexture(GL_TEXTURE_2D, rdr_obj->G_image_ID);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rdr_obj->width, rdr_obj->height,
-                    GL_RED_INTEGER, GL_UNSIGNED_INT, rdr_obj->G);
-    glBindTexture(GL_TEXTURE_2D, rdr_obj->B_image_ID);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rdr_obj->width, rdr_obj->height,
-                    GL_RED_INTEGER, GL_UNSIGNED_INT, rdr_obj->B);
+    flag = data_update_function(rdr_obj, fargs);
+    glCheckError();
 
+    glUseProgram(rdr_obj->shader_program);
     // render container
     glBindVertexArray(rdr_obj->VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glfwSwapBuffers(rdr_obj->window);
     glfwPollEvents();
+    // usleep(10000);
+    ++it;
   }
 
   glCheckError();
@@ -157,6 +142,7 @@ int render_finalize(Render_object *rdr_obj) {
   // Cleanup
   glDeleteVertexArrays(1, &(*rdr_obj).VAO);
   glDeleteBuffers(1, &(*rdr_obj).VBO);
+  glDeleteBuffers(1, &(*rdr_obj).VBO);
   glfwTerminate();
   return 0;
 }
@@ -166,24 +152,25 @@ void set_image2D(unsigned int unit, unsigned int *imageID, unsigned int width,
 
   glGenTextures(1, imageID);
   glBindTexture(GL_TEXTURE_2D, *imageID);
-
-  /* glCheckError(); */
-  /* glTexStorage2D(GL_TEXTURE_2D, 1, GL_R32UI, width, height); */
-  /* glCheckError(); */
-
-  /* glBindTexture(GL_TEXTURE_2D, 0); */
-  /* printf("width %u height %u , GL_MAX_TEXTURE_SIZE %u \n", width, height, */
-  /*        GL_MAX_TEXTURE_SIZE); */
-
-  /* glBindTexture(GL_TEXTURE_2D, *imageID); */
   glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, width, height, 0, GL_RED_INTEGER,
                GL_UNSIGNED_INT, img_data);
 
-  /* glCheckError(); */
-  /* glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RED, */
-  /*                 GL_UNSIGNED_INT, img_data); */
-
   glBindImageTexture(unit, *imageID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glCheckError();
+}
+
+void set_ssbo(Pts_msg *data, size_t size, unsigned int unit,
+              unsigned int *ssbo) {
+
+  glGenBuffers(1, ssbo);
+  printf("ssbo = %u \n ", *ssbo);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, *ssbo);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, size, data,
+               GL_DYNAMIC_READ); // sizeof(data) only works for statically sized
+
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, unit, *ssbo);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
   glCheckError();
 }
 

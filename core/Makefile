@@ -17,7 +17,7 @@ libslave.so: slave.c budack_core.c
 	$(CC) $(CFLAGS) -shared -o $@ $^ $(LDFLAGS) -O2
 
 libmaster.so: master.c budack_core.c tiff_images.c librender.so
-	$(CC) $(CFLAGS) -L. -shared -o $@ $^ $(LDFLAGS) -lrender -fopenmp -O2
+	$(CC) $(CFLAGS) -L. -shared -o $@ $^ $(LDFLAGS) -lrender -fopenmp -O0
 
 librender.so: opengl/render.c opengl/compileShader.c opengl/display_window.c opengl/src/glad.c
 	gcc $(CFLAGS) -I opengl -shared $^ -o $@ -lGL -lglfw -fPIC

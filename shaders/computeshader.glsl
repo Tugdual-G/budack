@@ -2,18 +2,38 @@
 
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-uniform ivec2 WindowSize;
+layout(location=0) uniform float dx;
+layout(binding = 0) buffer starting_points
+{
+    double strt[];
+};
+layout(binding = 1) buffer points
+{
+    double pts[];
+};
 layout(binding = 0, r32ui) uniform uimage2D red_image;
 layout(binding = 1, r32ui) uniform uimage2D green_image;
-layout(binding = 2, r32ui) uniform uimage2D blue_image;
+//layout(binding = 2, r32ui) uniform uimage2D blue_image;
 void main()
 {
-    ivec2 texel_coords = ivec2(gl_GlobalInvocationID.xy);
+    double dx_ = double(dx);
+    double y0 = strt[2*gl_GlobalInvocationID.x];
+    double x0 = strt[2*gl_GlobalInvocationID.x+1];
+    double y = pts[2*gl_GlobalInvocationID.x];
+    double x = pts[2*gl_GlobalInvocationID.x+1];
+    double y2 = y*y;
 
-    uint red = uint((imageLoad(red_image, texel_coords).r)*(1.0-texel_coords.x/float(gl_NumWorkGroups.x)));
-    uint green = uint((imageLoad(green_image, texel_coords).r)*texel_coords.x/float(gl_NumWorkGroups.x));
+    ivec2 coords = ivec2(int((2.3 + x)/dx_), int((1.5 + y )/dx_));
 
-    imageStore(red_image, texel_coords, uvec4(red, 0, 0,0));
-    imageStore(green_image, texel_coords, uvec4(green, 0,0,0));
+    imageAtomicAdd(red_image, coords, 1);
+
+    // coords.y = int((1.5 - y )/dx_);
+    // imageAtomicAdd(red_image, coords, 1);
+
+    y = 2 * x * y + y0;
+    x = x*x - y2 + x0;
+
+    pts[2*gl_GlobalInvocationID.x] = y;
+    pts[2*gl_GlobalInvocationID.x+1] = x;
 
 }

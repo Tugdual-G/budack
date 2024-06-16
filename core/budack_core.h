@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-#define PTS_MSG_SIZE 40
+#define PTS_MSG_SIZE 128
 #define LENGTH_STRT 50000
 #define MAX_PATH_LENGTH 490
 #define PARAM_FNAME "param.txt"
@@ -15,11 +15,11 @@
 #define AREA 9.0
 
 typedef struct {
-  unsigned int nit;
   double x;
   double y;
-  char color;
-} pts_msg;
+  unsigned int nit;
+  unsigned int color;
+} Pts_msg;
 
 typedef struct {
   unsigned int *nx, *ny, *maxit, *minit, *depth;

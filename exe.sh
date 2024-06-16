@@ -9,7 +9,7 @@ maxit=400 # Maximum number of iterations
 minit=60 # Minimum number of iterations
 
 #for live rendering, set to 0 to disable live rendering
-cycles_per_frame_update=200
+cycles_per_frame_update=50
 
 # PNG_IMAGE_NAME=nx"${nx}"_minit"${minit}"_maxit"${maxit}".png
 PNG_IMAGE_NAME=image.png
@@ -44,9 +44,9 @@ if [ $ncores -lt 3 ]
    then
     printf "Less than 3 cores available\n"
     oversub="--oversubscribe -n 4"
-elif [ $ncores -gt 6 ]
+elif [ $ncores -gt 5 ]
     then
-    oversub="-n 6"
+    oversub="-n 5"
 fi
 
 # Output of the computation
@@ -62,35 +62,35 @@ if [[ ! -d "${ENHANCED_OUTPUT_DIR}" ]]
 fi
 
 # #------------- computing  -------------
-mpiexec $oversub "$budack" "$nx" "$maxit" "$minit" "$density" "$depth" "$RAW_OUTPUT_DIR" "$cycles_per_frame_update" &
+mpiexec $oversub "$budack" "$nx" "$maxit" "$minit" "$density" "$depth" "$RAW_OUTPUT_DIR" "$cycles_per_frame_update"
 
 # Since open-MPI last version this is necesary in order to know the progress of the computation.
-START_TIME=$SECONDS
-echo 0 > /tmp/progress
-value="0"
+# START_TIME=$SECONDS
+# echo 0 > /tmp/progress
+# value="0"
 
-while [ "$value" == "0" ]
-do
-    value=$(</tmp/progress)
-done
+# while [ "$value" == "0" ]
+# do
+#     value=$(</tmp/progress)
+# done
 
-printf "\e[?25l"
+# printf "\e[?25l"
 
-while [ "$value" != "0" ]
-do
-    ELAPSED_TIME=$((SECONDS - START_TIME))
-    printf "\r%s  %u s" "$value" "$ELAPSED_TIME"
-    value=$(</tmp/progress)
-    sleep 0.1
-done
-printf "\e[?25h"
-wait
+# while [ "$value" != "0" ]
+# do
+#     ELAPSED_TIME=$((SECONDS - START_TIME))
+#     printf "\r%s  %u s" "$value" "$ELAPSED_TIME"
+#     value=$(</tmp/progress)
+#     sleep 0.1
+# done
+# printf "\e[?25h"
+# wait
 
 
-contrast="-sigmoidal-contrast 10x10%"
-magick "${RAW_OUTPUT_DIR}"image.tiff ${contrast} -rotate 90 "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
-echo "written enhanced image (sigmoidal contrast) ," "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
-if [[ $cycles_per_frame_update -eq 0 ]]
-   then
-    xdg-open "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
-fi
+# contrast="-sigmoidal-contrast 10x10%"
+# magick "${RAW_OUTPUT_DIR}"image.tiff ${contrast} -rotate 90 "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
+# echo "written enhanced image (sigmoidal contrast) ," "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
+# if [[ $cycles_per_frame_update -eq 0 ]]
+#    then
+#     xdg-open "${ENHANCED_OUTPUT_DIR}""${PNG_IMAGE_NAME}"
+# fi

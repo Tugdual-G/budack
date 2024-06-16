@@ -1,6 +1,7 @@
 #ifndef MASTER_H_
 #define MASTER_H_
 #include "budack_core.h"
+#include "opengl/render.h"
 #include <mpi.h>
 #include <stdlib.h>
 
@@ -8,7 +9,7 @@ typedef struct {
   int world_size;
   unsigned int nx, ny, n_it, redu_fact, nx_redu, ny_redu;
   MPI_Request *requ;
-  pts_msg *recbuff;
+  Pts_msg *recbuff;
   double *a, *b;
   uint32_t *Rmax, *Gmax, *Bmax;
   uint32_t *R, *G, *B;
@@ -28,5 +29,5 @@ void recieve_and_draw(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
 void draw_gray_into_RGB_buffer_8(uint8_t *RGB, uint32_t *gray1, uint32_t *gray2,
                                  uint32_t *gray3, size_t size_gray);
 
-int callback(uint32_t *R, uint32_t *G, uint32_t *B, void *fargs);
+int callback(Render_object *rdr_obj, void *fargs);
 #endif // MASTER_H_
