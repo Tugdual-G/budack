@@ -12,6 +12,7 @@ typedef struct {
   double *a, *b;
   uint32_t *Rmax, *Gmax, *Bmax;
   uint32_t *R, *G, *B;
+  clock_t waiting_t;
 } Fargs;
 
 int master(int world_size, Param param, double a[2], double b[2]);

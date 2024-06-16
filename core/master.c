@@ -236,7 +236,8 @@ void recieve_and_render(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
   write_progress(-2);
   printf("\n Rmax = %u , Gmax = %u, Bmax = %u \n", *args.Rmax, *args.Gmax,
          *args.Bmax);
-  /* printf("\nmaster waiting time : %lf s \n", (double)t / CLOCKS_PER_SEC); */
+  printf("\nmaster waiting time : %lf s \n",
+         (double)args.waiting_t / CLOCKS_PER_SEC);
 }
 
 void reduce(uint32_t *in, uint32_t *out, unsigned int in_nx, unsigned int in_ny,
@@ -250,12 +251,17 @@ int callback(uint32_t *R_reduced, uint32_t *G_reduced, uint32_t *B_reduced,
   Fargs *args = (Fargs *)fargs;
   uint32_t *R = args->R, *G = args->G, *B = args->B;
   pts_msg *rec = args->recbuff;
+  clock_t t0;
 
+  MPI_Start(args->requ);
+  MPI_Wait(args->requ, MPI_STATUS_IGNORE);
   unsigned int it = 0;
   while ((completion_flag < (args->world_size - 1)) && (it < args->n_it)) {
     ++it;
     MPI_Start(args->requ);
+    t0 = clock();
     MPI_Wait(args->requ, MPI_STATUS_IGNORE);
+    args->waiting_t += clock() - t0;
     if (rec[0].color) {
       for (unsigned int i = 0; i < PTS_MSG_SIZE; ++i) {
         switch (rec[i].color) {
