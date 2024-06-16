@@ -7,6 +7,11 @@ CFLAGS = -Wall -Wextra
 LDFLAGS_main = -lm
 LDFLAGS = -lm -ltiff -fPIC
 LDLIBS = -L. -lslave -lmaster -lrender
+
+LD_LIBRARY_PATH=.
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./core
+export LD_LIBRARY_PATH
+
 # Targets
 all: budack
 
