@@ -20,9 +20,9 @@ void main()
     // Get the fragment coordinates
     ivec2 imsize = imageSize(red_image).xy;
     ivec2 imcoords = ivec2(TexCoords*imsize);
-    float red = float(imageLoad(red_image, imcoords).r)/75;
-    float green = float(imageLoad(green_image, imcoords).r)/65;
-    float blue = float(imageLoad(blue_image, imcoords).r)/55;
+    float red = float(imageLoad(red_image, imcoords).r)/350;
+    float green = float(imageLoad(green_image, imcoords).r)/95;
+    float blue = float(imageLoad(blue_image, imcoords).r)/85;
     // red = sigmoidal_contrast(0.1, 5, red);
    FragColor = vec4(red, green, blue, 1.0);
 

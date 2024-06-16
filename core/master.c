@@ -45,8 +45,6 @@ int master(int world_size, Param param, double a[2], double b[2]) {
   // There is no need to parallelise this part
 
   unsigned int length_brdr = LENGTH_STRT / (world_size - 1);
-  clock_t t_begin = clock();
-  border(depth, length_brdr, NULL);
 
   ////////////////////////////////////////////////
   //   Cumputing the trajectories
@@ -60,6 +58,9 @@ int master(int world_size, Param param, double a[2], double b[2]) {
     printf("\n Error, no memory allocated for trajectories sum \n");
     exit(1);
   }
+
+  clock_t t_begin = clock();
+  border(depth, length_brdr, NULL);
   if (param.cycles_per_update != 0) {
     recieve_and_render(R_32, G_32, B_32, a, b, nx, ny, world_size,
                        param.cycles_per_update);
@@ -68,7 +69,7 @@ int master(int world_size, Param param, double a[2], double b[2]) {
   }
 
   printf("\nTime elapsed computing trajectories %f s \n",
-         (double)(clock() - t_begin) / CLOCKS_PER_SEC);
+         (double)(clock() - t_begin) / (double)CLOCKS_PER_SEC);
 
   /* uint16_t *R_16 = NULL; */
   /* uint16_t *G_16 = NULL; */
@@ -128,7 +129,6 @@ void recieve_and_draw(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
   MPI_Recv_init(recbuff, sizeof(Pts_msg) * PTS_MSG_SIZE, MPI_BYTE,
                 MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &requ);
 
-  printf("\n;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;\n");
   while (completion_flag < (world_size - 1)) {
 
     t0 = clock();
@@ -246,7 +246,7 @@ int callback(Render_object *rdr_obj, void *fargs) {
 
       glDispatchCompute((unsigned int)rdr_obj->recbuff_length, 1, 1);
 
-      /* glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT); */
+      glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     } else {
       ++completion_flag;

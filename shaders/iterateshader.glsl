@@ -9,8 +9,8 @@ struct pts_msg {
 
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-layout(location=0) uniform float dx;
-layout(binding = 0) buffer starting_points
+layout(location=0)  uniform float dx;
+layout(binding = 0) readonly buffer starting_points
 {
     pts_msg strt[];
 };
@@ -19,6 +19,8 @@ layout(binding = 1, r32ui) uniform uimage2D green_image;
 layout(binding = 2, r32ui) uniform uimage2D blue_image;
 void main()
 {
+    uint maxr=0, maxg=0, maxb=0;
+    uint read;
     ivec2 coords;
     double dx_ = double(dx);
     double y0 = strt[gl_GlobalInvocationID.x].y;
@@ -41,6 +43,10 @@ void main()
                 coords.x = int((2.3 + x ) / dx_);
                 coords.y = int((1.5 + y ) / dx_);
                 imageAtomicAdd(red_image, coords, 1);
+                // read = imageLoad(red_image, coords).r
+                // if (read > maxr){
+                // maxr = read;
+                // }
                 // coords.y = int((1.5 - y ) / dx_);
                 // imageAtomicAdd(red_image, coords, 1);
             }
@@ -56,6 +62,10 @@ void main()
                 coords.x = int((2.3 + x ) / dx_);
                 coords.y = int((1.5 + y ) / dx_);
                 imageAtomicAdd(green_image, coords, 1);
+                // read = imageLoad(green_image, coords).r
+                // if (read > maxg){
+                // maxg = read;
+                // }
                 // coords.y = int((1.5 - y ) / dx_);
                 // imageAtomicAdd(green_image, coords, 1);
             }
@@ -71,6 +81,10 @@ void main()
                 coords.x = int((2.3 + x ) / dx_);
                 coords.y = int((1.5 + y ) / dx_);
                 imageAtomicAdd(blue_image, coords, 1);
+                // read = imageLoad(blue_image, coords).r
+                // if (read > maxb){
+                // maxb = read;
+                // }
                 // coords.y = int((1.5 - y ) / dx_);
                 // imageAtomicAdd(blue_image, coords, 1);
             }

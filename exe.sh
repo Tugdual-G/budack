@@ -5,7 +5,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./core
 
 nx=1000 # Number of pixels in vertical direction
 density=20 # Number of point per pixels, higher = less noise but slower
-maxit=400 # Maximum number of iterations
+maxit=500 # Maximum number of iterations
 minit=60 # Minimum number of iterations
 
 #for live rendering, set to 0 to disable live rendering
