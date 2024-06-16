@@ -25,3 +25,4 @@ gamma
 !hints80.double
 output/
 *.dat
+core/opengl/
