@@ -215,8 +215,8 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
   MPI_Wait(&req, MPI_STATUS_IGNORE);
   MPI_Isend(sended_points, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
             MPI_COMM_WORLD, &req);
-  printf("\nslave waiting time rank %i : %lf s \n", rank,
-         (double)t / CLOCKS_PER_SEC);
+  //printf("\nslave waiting time rank %i : %lf s \n", rank,
+  //       (double)t / CLOCKS_PER_SEC);
 }
 
 int border(unsigned int depth, long int length_strt,
