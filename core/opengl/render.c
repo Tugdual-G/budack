@@ -36,8 +36,6 @@ void render_init(Render_object *rdr_obj) {
   unsigned int fragmentShader =
       compileFragmentShader("shaders/gather_rgb_fragment.glsl");
   rdr_obj->shader_program = linkShaders(vertexShader, fragmentShader);
-  // rdr_obj->compute_program =
-  // computeShaderProgram("shaders/computeshader.glsl");
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
 
@@ -46,7 +44,6 @@ void render_init(Render_object *rdr_obj) {
   glUniform3ui(rdr_obj->maxv_loc, rdr_obj->Rmax, rdr_obj->Gmax, rdr_obj->Bmax);
 
   glfwSetFramebufferSizeCallback(rdr_obj->window, framebuffer_size_callback);
-  keep_aspect_ratio(rdr_obj->window, rdr_obj->width, rdr_obj->height);
 
   // Define a list of points
   float vertices[] = {
@@ -104,7 +101,6 @@ int render_loop(Render_object *rdr_obj,
   int flag = 1;
   glClearColor(0.0, 0.0, 0.0, 0.0);
   glUseProgram(rdr_obj->shader_program);
-  glUniform3ui(rdr_obj->maxv_loc, rdr_obj->Rmax, rdr_obj->Gmax, rdr_obj->Bmax);
 
   while (!glfwWindowShouldClose(rdr_obj->window) && flag) {
     keep_aspect_ratio(rdr_obj->window, rdr_obj->width, rdr_obj->height);
@@ -112,18 +108,19 @@ int render_loop(Render_object *rdr_obj,
     glClear(GL_COLOR_BUFFER_BIT);
 
     flag = data_update_function(rdr_obj->R, rdr_obj->G, rdr_obj->B, fargs);
+
     glUniform3ui(rdr_obj->maxv_loc, rdr_obj->Rmax, rdr_obj->Gmax,
                  rdr_obj->Bmax);
 
-    glBindTexture(GL_TEXTURE_2D, rdr_obj->R_image_ID);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rdr_obj->width, rdr_obj->height,
-                    GL_RED_INTEGER, GL_UNSIGNED_INT, rdr_obj->R);
-    glBindTexture(GL_TEXTURE_2D, rdr_obj->G_image_ID);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rdr_obj->width, rdr_obj->height,
-                    GL_RED_INTEGER, GL_UNSIGNED_INT, rdr_obj->G);
-    glBindTexture(GL_TEXTURE_2D, rdr_obj->B_image_ID);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rdr_obj->width, rdr_obj->height,
-                    GL_RED_INTEGER, GL_UNSIGNED_INT, rdr_obj->B);
+    glTextureSubImage2D(rdr_obj->R_image_ID, 0, 0, 0, rdr_obj->width,
+                        rdr_obj->height, GL_RED_INTEGER, GL_UNSIGNED_INT,
+                        rdr_obj->R);
+    glTextureSubImage2D(rdr_obj->G_image_ID, 0, 0, 0, rdr_obj->width,
+                        rdr_obj->height, GL_RED_INTEGER, GL_UNSIGNED_INT,
+                        rdr_obj->G);
+    glTextureSubImage2D(rdr_obj->B_image_ID, 0, 0, 0, rdr_obj->width,
+                        rdr_obj->height, GL_RED_INTEGER, GL_UNSIGNED_INT,
+                        rdr_obj->B);
 
     // render container
     glBindVertexArray(rdr_obj->VAO);
@@ -146,26 +143,10 @@ int render_finalize(Render_object *rdr_obj) {
 
 void set_image2D(unsigned int unit, unsigned int *imageID, unsigned int width,
                  unsigned int height, uint32_t *img_data) {
-
   glGenTextures(1, imageID);
   glBindTexture(GL_TEXTURE_2D, *imageID);
-
-  /* glCheckError(); */
-  /* glTexStorage2D(GL_TEXTURE_2D, 1, GL_R32UI, width, height); */
-  /* glCheckError(); */
-
-  /* glBindTexture(GL_TEXTURE_2D, 0); */
-  /* printf("width %u height %u , GL_MAX_TEXTURE_SIZE %u \n", width, height, */
-  /*        GL_MAX_TEXTURE_SIZE); */
-
-  /* glBindTexture(GL_TEXTURE_2D, *imageID); */
   glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, width, height, 0, GL_RED_INTEGER,
                GL_UNSIGNED_INT, img_data);
-
-  /* glCheckError(); */
-  /* glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RED, */
-  /*                 GL_UNSIGNED_INT, img_data); */
-
   glBindImageTexture(unit, *imageID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
   glCheckError();
 }
