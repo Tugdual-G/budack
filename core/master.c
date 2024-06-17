@@ -92,6 +92,9 @@ void recieve_and_render(double a[2], double b[2], unsigned int nx,
       .R = NULL,
       .G = NULL,
       .B = NULL,
+      .Rmax = 1,
+      .Gmax = 1,
+      .Bmax = 1,
       .redu_fact = redu_fact,
   };
 
@@ -109,6 +112,9 @@ void recieve_and_render(double a[2], double b[2], unsigned int nx,
       .B = NULL,
       .dx = (a[1] - a[0]) / (double)nx,
   };
+
+  rdr_obj.maxv =
+      (uint32_t *)calloc(rdr_obj.recbuff_length * 3, sizeof(uint32_t));
 
   render_init(&rdr_obj);
   render_loop(&rdr_obj, callback, &args);
@@ -154,6 +160,23 @@ int callback(Render_object *rdr_obj, void *fargs) {
     /* } */
   }
 
+  glGetNamedBufferSubData(rdr_obj->maxv_ssbo, 0,
+                          rdr_obj->recbuff_length * sizeof(uint32_t) * 3,
+                          rdr_obj->maxv);
+
+  for (unsigned int k = 0; k < rdr_obj->recbuff_length * 3; k += 3) {
+    if (rdr_obj->maxv[k] > args->Rmax) {
+      args->Rmax = rdr_obj->maxv[k];
+    }
+    if (rdr_obj->maxv[k + 1] > args->Gmax) {
+      args->Gmax = rdr_obj->maxv[k + 1];
+    }
+    if (rdr_obj->maxv[k + 2] > args->Bmax) {
+      args->Bmax = rdr_obj->maxv[k + 2];
+    }
+  }
+  glUseProgram(rdr_obj->shader_program);
+  glUniform3ui(rdr_obj->max_loc, args->Rmax, args->Gmax, args->Bmax);
   // printf("completion_flag = %u \n", completion_flag);
   return (completion_flag != (args->world_size - 1));
 }

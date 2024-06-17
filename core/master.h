@@ -11,7 +11,7 @@ typedef struct {
   MPI_Request *requ;
   Pts_msg *recbuff;
   double *a, *b;
-  uint32_t *Rmax, *Gmax, *Bmax;
+  uint32_t Rmax, Gmax, Bmax;
   uint32_t *R, *G, *B;
   clock_t waiting_t;
 } Fargs;

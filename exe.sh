@@ -9,7 +9,7 @@ maxit=500 # Maximum number of iterations
 minit=60 # Minimum number of iterations
 
 #for live rendering, set to 0 to disable live rendering
-cycles_per_frame_update=2
+cycles_per_frame_update=80
 
 # PNG_IMAGE_NAME=nx"${nx}"_minit"${minit}"_maxit"${maxit}".png
 PNG_IMAGE_NAME=image.png

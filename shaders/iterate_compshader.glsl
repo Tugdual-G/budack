@@ -14,12 +14,19 @@ layout(binding = 0) readonly buffer starting_points
 {
     pts_msg strt[];
 };
+layout(binding = 1) buffer maxvalues
+{
+    uint maxval[];
+};
 layout(binding = 0, r32ui) uniform uimage2D red_image;
 layout(binding = 1, r32ui) uniform uimage2D green_image;
 layout(binding = 2, r32ui) uniform uimage2D blue_image;
 void main()
 {
-    uint maxr=0, maxg=0, maxb=0;
+    uint maxr=maxval[3*gl_GlobalInvocationID.x];
+    uint maxg=maxval[3*gl_GlobalInvocationID.x+1];
+    uint maxb=maxval[3*gl_GlobalInvocationID.x+2];
+
     uint read;
     ivec2 coords;
     double dx_ = double(dx);
@@ -43,10 +50,10 @@ void main()
                 coords.x = int((2.3 + x ) / dx_);
                 coords.y = int((1.5 + y ) / dx_);
                 imageAtomicAdd(red_image, coords, 1);
-                // read = imageLoad(red_image, coords).r
-                // if (read > maxr){
-                // maxr = read;
-                // }
+                read = imageLoad(red_image, coords).r;
+                if (read > maxr){
+                maxr = read;
+                }
                 // coords.y = int((1.5 - y ) / dx_);
                 // imageAtomicAdd(red_image, coords, 1);
             }
@@ -62,10 +69,10 @@ void main()
                 coords.x = int((2.3 + x ) / dx_);
                 coords.y = int((1.5 + y ) / dx_);
                 imageAtomicAdd(green_image, coords, 1);
-                // read = imageLoad(green_image, coords).r
-                // if (read > maxg){
-                // maxg = read;
-                // }
+                read = imageLoad(green_image, coords).r;
+                if (read > maxg){
+                maxg = read;
+                }
                 // coords.y = int((1.5 - y ) / dx_);
                 // imageAtomicAdd(green_image, coords, 1);
             }
@@ -81,15 +88,19 @@ void main()
                 coords.x = int((2.3 + x ) / dx_);
                 coords.y = int((1.5 + y ) / dx_);
                 imageAtomicAdd(blue_image, coords, 1);
-                // read = imageLoad(blue_image, coords).r
-                // if (read > maxb){
-                // maxb = read;
-                // }
+                read = imageLoad(blue_image, coords).r;
+                if (read > maxb){
+                maxb = read;
+                }
                 // coords.y = int((1.5 - y ) / dx_);
                 // imageAtomicAdd(blue_image, coords, 1);
             }
             break;
         }
     }
+
+    maxval[3*gl_GlobalInvocationID.x] = maxr;
+    maxg=maxval[3*gl_GlobalInvocationID.x+1] = maxg;
+    maxval[3*gl_GlobalInvocationID.x+2] = maxb;
 
 }

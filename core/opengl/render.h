@@ -15,6 +15,8 @@ typedef struct {
   uint32_t *R, *G, *B;
   unsigned int width, height;
   unsigned int shader_program, compute_program;
+  uint32_t *maxv;
+  unsigned int maxv_ssbo, max_loc;
   unsigned int R_image_ID, Runit, G_image_ID, Gunit, B_image_ID, Bunit;
   unsigned int recbuff_ID, recbuff_unit, recbuff_length, recbuff_ssbo;
   unsigned int VAO;
@@ -34,7 +36,6 @@ int render_finalize(Render_object *rdr_obj);
 void set_image2D(unsigned int unit, unsigned int *imageID, unsigned int width,
                  unsigned int height, uint32_t *img_data);
 
-void set_ssbo(Pts_msg *data, size_t size, unsigned int unit,
-              unsigned int *ssbo);
+void set_ssbo(void *data, size_t size, unsigned int unit, unsigned int *ssbo);
 
 #endif // RENDER_H_

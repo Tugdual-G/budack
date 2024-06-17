@@ -99,14 +99,17 @@ void render_init(Render_object *rdr_obj) {
   set_ssbo(rdr_obj->recbuff, rdr_obj->recbuff_length * sizeof(Pts_msg),
            rdr_obj->recbuff_unit, &rdr_obj->recbuff_ssbo);
 
+  set_ssbo(rdr_obj->maxv, rdr_obj->recbuff_length * sizeof(uint32_t) * 3, 1,
+           &rdr_obj->maxv_ssbo);
+
   glUseProgram(rdr_obj->compute_program);
-  unsigned int dx_loc = 999999, max_loc;
+  unsigned int dx_loc = 999999;
   dx_loc = glGetUniformLocation(rdr_obj->compute_program, "dx");
   glUniform1f(dx_loc, (float)(rdr_obj->dx));
 
   glUseProgram(rdr_obj->shader_program);
-  max_loc = glGetUniformLocation(rdr_obj->shader_program, "maxval");
-  glUniform3ui(max_loc, (unsigned)100, (unsigned)70, (unsigned)40);
+  rdr_obj->max_loc = glGetUniformLocation(rdr_obj->shader_program, "maxval");
+  glUniform3ui(rdr_obj->max_loc, (unsigned)10, (unsigned)10, (unsigned)10);
   glCheckError();
 }
 
@@ -165,9 +168,7 @@ void set_image2D(unsigned int unit, unsigned int *imageID, unsigned int width,
   glCheckError();
 }
 
-void set_ssbo(Pts_msg *data, size_t size, unsigned int unit,
-              unsigned int *ssbo) {
-
+void set_ssbo(void *data, size_t size, unsigned int unit, unsigned int *ssbo) {
   glGenBuffers(1, ssbo);
   printf("ssbo = %u \n ", *ssbo);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, *ssbo);
