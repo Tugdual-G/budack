@@ -103,7 +103,7 @@ void render_init(Render_object *rdr_obj) {
            &rdr_obj->maxv_ssbo);
 
   glUseProgram(rdr_obj->compute_program);
-  unsigned int dx_loc = 999999;
+  unsigned int dx_loc = 999999; // for debuging
   dx_loc = glGetUniformLocation(rdr_obj->compute_program, "dx");
   glUniform1f(dx_loc, (float)(rdr_obj->dx));
 
