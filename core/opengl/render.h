@@ -10,11 +10,12 @@
 typedef struct {
   GLFWwindow *window;
   unsigned int shader_program, compute_program;
-  unsigned int R_image_ID, Runit, G_image_ID, Gunit, B_image_ID, Bunit, width,
-      height;
-  unsigned int VAO;
-  unsigned int VBO;
-  uint32_t *R, *G, *B, Rmax, Gmax, Bmax;
+  unsigned int R_image_ID, Runit, G_image_ID, Gunit, B_image_ID, Bunit;
+  unsigned int width, height;
+  unsigned int VAO, VBO;
+  uint32_t *R, *G, *B;
+  uint32_t Rmax, Gmax, Bmax;
+  unsigned int maxv_loc;
 
 } Render_object;
 

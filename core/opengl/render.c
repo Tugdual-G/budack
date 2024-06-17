@@ -32,21 +32,18 @@ void render_init(Render_object *rdr_obj) {
   }
 
   // Compile shaders
-  unsigned int vertexShader = compileVertexShader("shaders/vertexShader.glsl");
+  unsigned int vertexShader = compileVertexShader("shaders/vertex_shader.glsl");
   unsigned int fragmentShader =
-      compileFragmentShader("shaders/rgbassemble.glsl");
+      compileFragmentShader("shaders/gather_rgb_fragment.glsl");
   rdr_obj->shader_program = linkShaders(vertexShader, fragmentShader);
-  rdr_obj->compute_program = computeShaderProgram("shaders/computeshader.glsl");
+  // rdr_obj->compute_program =
+  // computeShaderProgram("shaders/computeshader.glsl");
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
 
   glUseProgram(rdr_obj->shader_program);
-  unsigned int Rmaxid = glGetUniformLocation(rdr_obj->shader_program, "Rmax");
-  unsigned int Gmaxid = glGetUniformLocation(rdr_obj->shader_program, "Gmax");
-  unsigned int Bmaxid = glGetUniformLocation(rdr_obj->shader_program, "Bmax");
-  glUniform1ui(Rmaxid, rdr_obj->Rmax);
-  glUniform1ui(Gmaxid, rdr_obj->Gmax);
-  glUniform1ui(Bmaxid, rdr_obj->Bmax);
+  rdr_obj->maxv_loc = glGetUniformLocation(rdr_obj->shader_program, "maxv");
+  glUniform3ui(rdr_obj->maxv_loc, rdr_obj->Rmax, rdr_obj->Gmax, rdr_obj->Bmax);
 
   glfwSetFramebufferSizeCallback(rdr_obj->window, framebuffer_size_callback);
   keep_aspect_ratio(rdr_obj->window, rdr_obj->width, rdr_obj->height);
@@ -96,11 +93,6 @@ void render_init(Render_object *rdr_obj) {
   set_image2D(rdr_obj->Bunit, &rdr_obj->B_image_ID, rdr_obj->width,
               rdr_obj->height, rdr_obj->B);
 
-  /* glUseProgram(rdr_obj->compute_program); */
-  /* glDispatchCompute((unsigned int)rdr_obj->width, (unsigned
-   * int)rdr_obj->height, 1); */
-  /* // make sure writing to image has finished before read */
-  /* glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT); */
   glCheckError();
 }
 
@@ -112,15 +104,7 @@ int render_loop(Render_object *rdr_obj,
   int flag = 1;
   glClearColor(0.0, 0.0, 0.0, 0.0);
   glUseProgram(rdr_obj->shader_program);
-  unsigned int Rmaxid = glGetUniformLocation(rdr_obj->shader_program, "Rmax");
-  unsigned int Gmaxid = glGetUniformLocation(rdr_obj->shader_program, "Gmax");
-  unsigned int Bmaxid = glGetUniformLocation(rdr_obj->shader_program, "Bmax");
-  glUniform1ui(Rmaxid, rdr_obj->Rmax);
-  glUniform1ui(Gmaxid, rdr_obj->Gmax);
-  glUniform1ui(Bmaxid, rdr_obj->Bmax);
-  /* printf("Rmax = %u\n", rdr_obj->Rmax); */
-  /* printf("Gmax = %u\n", rdr_obj->Gmax); */
-  /* printf("Bmax = %u\n", rdr_obj->Bmax); */
+  glUniform3ui(rdr_obj->maxv_loc, rdr_obj->Rmax, rdr_obj->Gmax, rdr_obj->Bmax);
 
   while (!glfwWindowShouldClose(rdr_obj->window) && flag) {
     keep_aspect_ratio(rdr_obj->window, rdr_obj->width, rdr_obj->height);
@@ -128,9 +112,8 @@ int render_loop(Render_object *rdr_obj,
     glClear(GL_COLOR_BUFFER_BIT);
 
     flag = data_update_function(rdr_obj->R, rdr_obj->G, rdr_obj->B, fargs);
-    glUniform1ui(Rmaxid, rdr_obj->Rmax);
-    glUniform1ui(Gmaxid, rdr_obj->Gmax);
-    glUniform1ui(Bmaxid, rdr_obj->Bmax);
+    glUniform3ui(rdr_obj->maxv_loc, rdr_obj->Rmax, rdr_obj->Gmax,
+                 rdr_obj->Bmax);
 
     glBindTexture(GL_TEXTURE_2D, rdr_obj->R_image_ID);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rdr_obj->width, rdr_obj->height,
