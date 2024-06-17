@@ -170,7 +170,6 @@ void set_image2D(unsigned int unit, unsigned int *imageID, unsigned int width,
 
 void set_ssbo(void *data, size_t size, unsigned int unit, unsigned int *ssbo) {
   glGenBuffers(1, ssbo);
-  printf("ssbo = %u \n ", *ssbo);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, *ssbo);
   glBufferData(GL_SHADER_STORAGE_BUFFER, size, data,
                GL_DYNAMIC_DRAW); // sizeof(data) only works for statically sized

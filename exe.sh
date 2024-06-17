@@ -3,9 +3,9 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./core
 # This is the main executable.
 # This script generate the trajectories and the images.
 
-nx=1000 # Number of pixels in vertical direction
-density=20 # Number of point per pixels, higher = less noise but slower
-maxit=500 # Maximum number of iterations
+nx=2000 # Number of pixels in vertical direction
+density=40 # Number of point per pixels, higher = less noise but slower
+maxit=2000 # Maximum number of iterations
 minit=60 # Minimum number of iterations
 
 #for live rendering, set to 0 to disable live rendering

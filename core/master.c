@@ -5,7 +5,7 @@
 #include "tiff_images.h"
 #include <math.h>
 #include <mpi.h>
-#include <omp.h>
+// #include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,7 +55,7 @@ int master(int world_size, Param param, double a[2], double b[2]) {
   recieve_and_render(a, b, nx, ny, world_size, param.cycles_per_update);
 
   printf("\nTime elapsed computing trajectories %f s \n",
-         ((double)clock() - t_begin) / CLOCKS_PER_SEC);
+         ((double)clock() - (double)t_begin) / CLOCKS_PER_SEC);
 
   return 0;
 }
