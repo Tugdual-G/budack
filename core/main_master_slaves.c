@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
       .D = &D,
       .depth = &depth,
       .output_dir = "/tmp/",
-      .cycles_per_update = 0,
+      .cycles_per_update = 200,
   };
 
   parse(argc, argv, &param);

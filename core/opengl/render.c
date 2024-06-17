@@ -32,11 +32,12 @@ void render_init(Render_object *rdr_obj) {
   }
 
   // Compile shaders
-  unsigned int vertexShader = compileVertexShader("shaders/vertexShader.glsl");
+  unsigned int vertexShader = compileVertexShader("shaders/vertex_shader.glsl");
   unsigned int fragmentShader =
-      compileFragmentShader("shaders/rgbassemble.glsl");
+      compileFragmentShader("shaders/gather_rgb_fragment.glsl");
   rdr_obj->shader_program = linkShaders(vertexShader, fragmentShader);
-  rdr_obj->compute_program = computeShaderProgram("shaders/iterateshader.glsl");
+  rdr_obj->compute_program =
+      computeShaderProgram("shaders/iterate_compshader.glsl");
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
 
@@ -99,9 +100,13 @@ void render_init(Render_object *rdr_obj) {
            rdr_obj->recbuff_unit, &rdr_obj->recbuff_ssbo);
 
   glUseProgram(rdr_obj->compute_program);
-  unsigned int dxloc = 143;
-  dxloc = glGetUniformLocation(rdr_obj->compute_program, "dx");
-  glUniform1f(dxloc, (float)(rdr_obj->dx));
+  unsigned int dx_loc = 999999, max_loc;
+  dx_loc = glGetUniformLocation(rdr_obj->compute_program, "dx");
+  glUniform1f(dx_loc, (float)(rdr_obj->dx));
+
+  glUseProgram(rdr_obj->shader_program);
+  max_loc = glGetUniformLocation(rdr_obj->shader_program, "maxval");
+  glUniform3ui(max_loc, (unsigned)100, (unsigned)70, (unsigned)40);
   glCheckError();
 }
 
@@ -130,7 +135,7 @@ int render_loop(Render_object *rdr_obj,
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glfwSwapBuffers(rdr_obj->window);
     glfwPollEvents();
-    // usleep(10000);
+    // usleep(500000);
     ++it;
   }
 
@@ -167,8 +172,7 @@ void set_ssbo(Pts_msg *data, size_t size, unsigned int unit,
   printf("ssbo = %u \n ", *ssbo);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, *ssbo);
   glBufferData(GL_SHADER_STORAGE_BUFFER, size, data,
-               GL_DYNAMIC_READ); // sizeof(data) only works for statically sized
-
+               GL_DYNAMIC_DRAW); // sizeof(data) only works for statically sized
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, unit, *ssbo);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
   glCheckError();

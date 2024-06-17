@@ -186,7 +186,6 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
         if (rank == 1 && npts % (PTS_MSG_SIZE * 2) == 0) {
           write_progress(density);
         }
-
         t0 = clock();
         MPI_Wait(&req, MPI_STATUS_IGNORE);
         MPI_Isend(sended_points + npts - PTS_MSG_SIZE,
@@ -199,6 +198,7 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
   }
 
   if (npts % PTS_MSG_SIZE != 0) {
+    // Set the remaining points in the buffer to 0 flag.
     for (unsigned int i = npts; i < PTS_MSG_SIZE * 2; ++i) {
       sended_points[i].color = 0;
     }
@@ -434,9 +434,12 @@ void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B) {
 
 void parse(int argc, char *argv[], Param *param) {
   switch (argc) {
-
   case 8:
-    (*param).cycles_per_update = atoi(argv[7]);
+    if (atoi(argv[7]) != 0) {
+      (*param).cycles_per_update = atoi(argv[7]);
+    } else {
+      printf("Warning, the number of cycles per update must be > 0 \n");
+    }
     __attribute__((fallthrough)); // Shut down the fallthrough warning
 
   case 7:
