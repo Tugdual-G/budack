@@ -1,5 +1,5 @@
 # budack
- **Parallel colored rendering of the Mandelbrot set gost-points.**
+ **Real time parallel rendering of the Mandelbrot set gost-points.**
 
 ([click to explore the details](https://raw.githubusercontent.com/Tugdual-G/budack/main/images_exemples/trajhd.png))
 
@@ -14,8 +14,10 @@ The main program create a 16 bits per channel TIFF image to favor further proces
 ImageMagick is used to apply a sigmoidal contrast to the image, but this can be done with any editing software.
 Editing the script allow to tune the parameters easily.
 
-Live render of the computing is possible using the project's branch "opengl",
-this branch is implemented in a master/slave scheme, which is slower but more suited to large images ( > 10,000 x 10,000 px).
+The project use tree different styles of implementation :
+* The __main__ branch is implemented in a master/slave scheme, which is slower but more suited to large images ( > 8000 x 8000 px) and live rendering.
+* The __gather__ branch uses a "compute then gather" scheme which is really fast but ends with huge data transferts in the case of large images, which take a toll on the RAM.
+* The __shader__ branch is GPU-oriented, it was just an excuse to discover compute-shaders, since the GPU is not well suited to this problem due to the massive amount of random access writes, for now it's garbage. 
 
 ![gif example](images_examples/live_render.gif)
 
@@ -31,6 +33,8 @@ The script exe.sh add more details to the function of each parameter in comments
 ## Requirements
 - Open-MPI for parallel computing
 - libtiff c library
+- OpenGL >= 4.6
+- GLFW
 
 **Optional**
 - ImageMagick, to process and enhance the TIFF files.
