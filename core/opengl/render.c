@@ -36,8 +36,9 @@ void render_init(Render_object *rdr_obj) {
   unsigned int fragmentShader =
       compileFragmentShader("shaders/gather_rgb_fragment.glsl");
   rdr_obj->shader_program = linkShaders(vertexShader, fragmentShader);
-  rdr_obj->compute_program =
+  rdr_obj->iterate_program =
       computeShaderProgram("shaders/iterate_compshader.glsl");
+
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
 
@@ -102,15 +103,20 @@ void render_init(Render_object *rdr_obj) {
   set_ssbo(rdr_obj->maxv, rdr_obj->recbuff_length * sizeof(uint32_t) * 3, 1,
            &rdr_obj->maxv_ssbo);
 
-  glUseProgram(rdr_obj->compute_program);
+  glUseProgram(rdr_obj->iterate_program);
   unsigned int dx_loc = 999999; // for debuging
-  dx_loc = glGetUniformLocation(rdr_obj->compute_program, "dx");
+  dx_loc = glGetUniformLocation(rdr_obj->iterate_program, "dx");
   glUniform1f(dx_loc, (float)(rdr_obj->dx));
 
-  glUseProgram(rdr_obj->shader_program);
-  rdr_obj->max_loc = glGetUniformLocation(rdr_obj->shader_program, "maxval");
-  glUniform3ui(rdr_obj->max_loc, (unsigned)10, (unsigned)10, (unsigned)10);
+  /* glUseProgram(rdr_obj->shader_program); */
+  /* rdr_obj->max_loc = glGetUniformLocation(rdr_obj->shader_program, "maxval");
+   */
+  /* glUniform3ui(rdr_obj->max_loc, (unsigned)10, (unsigned)10, (unsigned)10);
+   */
   glCheckError();
+
+  printf(" GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS %u \n",
+         GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS);
 }
 
 int render_loop(Render_object *rdr_obj,

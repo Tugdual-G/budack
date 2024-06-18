@@ -7,7 +7,7 @@ struct pts_msg {
   uint color;
 };
 
-layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 layout(location=0)  uniform float dx;
 layout(binding = 0) readonly buffer starting_points
@@ -23,17 +23,22 @@ layout(binding = 1, r32ui) uniform uimage2D green_image;
 layout(binding = 2, r32ui) uniform uimage2D blue_image;
 void main()
 {
-    uint maxr=maxval[3*gl_GlobalInvocationID.x];
-    uint maxg=maxval[3*gl_GlobalInvocationID.x+1];
-    uint maxb=maxval[3*gl_GlobalInvocationID.x+2];
+
+    uint size = gl_WorkGroupSize.x;
+    //uint size = gl_NumWorkGroups.x;
+    uint id = gl_LocalInvocationID.x;
+    uint maxr=maxval[3*id];
+    uint maxg=maxval[3*id+1];
+    uint maxb=maxval[3*id+2];
 
     uint read;
     ivec2 coords;
     double dx_ = double(dx);
-    double y0 = strt[gl_GlobalInvocationID.x].y;
-    double x0 = strt[gl_GlobalInvocationID.x].x;
-    uint nit = strt[gl_GlobalInvocationID.x].nit;
-    uint col = strt[gl_GlobalInvocationID.x].color;
+
+    double y0 = strt[id].y;
+    double x0 = strt[id].x;
+    uint nit = strt[id].nit;
+    uint col = strt[id].color;
     double y = y0;
     double x = x0;
     double x2 = x*x;
@@ -99,8 +104,17 @@ void main()
         }
     }
 
-    maxval[3*gl_GlobalInvocationID.x] = maxr;
-    maxg=maxval[3*gl_GlobalInvocationID.x+1] = maxg;
-    maxval[3*gl_GlobalInvocationID.x+2] = maxb;
-
+    maxval[3*id] = maxr;
+    maxg=maxval[3*id+1] = maxg;
+    maxval[3*id+2] = maxb;
+    barrier();
+    while (size > 0){
+        size /= 2;
+        if (id<size){
+            maxval[3 * id] = max(maxval[3 * id], maxval[3 * id + 3 * size]);
+            maxval[3 * id + 1] = max(maxval[3 * id + 1], maxval[3 * id + 3 * size + 1]);
+            maxval[3 * id + 2] = max(maxval[3 * id + 2], maxval[3 * id + 3 * size + 2]);
+        }
+        barrier();
+    }
 }

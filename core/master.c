@@ -14,12 +14,16 @@
 #include <time.h>
 #include <unistd.h>
 
-#define N_REQUESTS 4
+#define N_REQUESTS 8
 
 GLenum glCheckError_(const char *file, int line);
 #define glCheckError() glCheckError_(__FILE__, __LINE__)
 
 int master(int world_size, Param param, double a[2], double b[2]) {
+
+  if (PTS_MSG_SIZE * N_REQUESTS != 256) {
+    printf("Error : PTS_MSG_SIZE * N_REQUESTS should be equal to 256. \n");
+  }
 
   printf("Number of cores : %i \n", world_size);
 
@@ -96,6 +100,7 @@ void recieve_and_render(double a[2], double b[2], unsigned int nx,
       .Gmax = 1,
       .Bmax = 1,
       .redu_fact = redu_fact,
+      .waiting_t = 0,
   };
 
   Render_object rdr_obj = {
@@ -127,57 +132,42 @@ void recieve_and_render(double a[2], double b[2], unsigned int nx,
 
 int callback(Render_object *rdr_obj, void *fargs) {
 
-  glUseProgram(rdr_obj->compute_program);
+  glUseProgram(rdr_obj->iterate_program);
   /* glBindBuffer(GL_SHADER_STORAGE_BUFFER, rdr_obj->recbuff_ssbo); */
   static int completion_flag = 0;
   Fargs *args = (Fargs *)fargs;
   Pts_msg *rec = args->recbuff;
   clock_t t0;
   args->n_it = 1;
-  unsigned int it = 0;
+  unsigned int it = 0, n_requests = N_REQUESTS;
   while ((completion_flag < (args->world_size - 1)) && (it < args->n_it)) {
     ++it;
-    for (unsigned int i = 0; i < N_REQUESTS; ++i) {
+    for (unsigned int i = 0; i < n_requests; ++i) {
       MPI_Start((args->requ + i));
     }
     t0 = clock();
-    for (unsigned int i = 0; i < N_REQUESTS; ++i) {
+    for (unsigned int i = 0; i < n_requests; ++i) {
       MPI_Wait((args->requ + i), MPI_STATUS_IGNORE);
       /* printf(" flag = %u\n", rec[i * PTS_MSG_SIZE].color); */
+
       completion_flag += rec[i * PTS_MSG_SIZE].color != 0 ? 0 : 1;
+      if (completion_flag == (args->world_size - 2)) {
+        n_requests = 1;
+      }
     }
     args->waiting_t += clock() - t0;
     glNamedBufferSubData(rdr_obj->recbuff_ssbo, 0,
                          rdr_obj->recbuff_length * sizeof(Pts_msg), rec);
-    glDispatchCompute((unsigned int)rdr_obj->recbuff_length, 1, 1);
+    glDispatchCompute(1, 1, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-    // In case one of the process returns,
-    // we do not know where it we do not want to leave starting points in the
-    // buffer. Otherwise the GPU would have to process them multiples times.
-    /* for (unsigned int k = 0; k < PTS_MSG_SIZE * N_REQUESTS; ++k) { */
-    /*   rec[k].color = 0; */
-    /* } */
-  }
-
-  glGetNamedBufferSubData(rdr_obj->maxv_ssbo, 0,
-                          rdr_obj->recbuff_length * sizeof(uint32_t) * 3,
-                          rdr_obj->maxv);
-
-  for (unsigned int k = 0; k < rdr_obj->recbuff_length * 3; k += 3) {
-    if (rdr_obj->maxv[k] > args->Rmax) {
-      args->Rmax = rdr_obj->maxv[k];
-    }
-    if (rdr_obj->maxv[k + 1] > args->Gmax) {
-      args->Gmax = rdr_obj->maxv[k + 1];
-    }
-    if (rdr_obj->maxv[k + 2] > args->Bmax) {
-      args->Bmax = rdr_obj->maxv[k + 2];
+    /* In case one of the process returns, */
+    /* we do not know where it we do not want to leave starting points in the */
+    /* buffer. Otherwise the GPU would have to process them multiples times. */
+    for (unsigned int k = 0; k < PTS_MSG_SIZE * N_REQUESTS; ++k) {
+      rec[k].color = 0;
     }
   }
-  glUseProgram(rdr_obj->shader_program);
-  glUniform3ui(rdr_obj->max_loc, args->Rmax, args->Gmax, args->Bmax);
-  // printf("completion_flag = %u \n", completion_flag);
   return (completion_flag != (args->world_size - 1));
 }
 

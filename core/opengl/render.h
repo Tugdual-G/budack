@@ -14,7 +14,7 @@ typedef struct {
   double dx;
   uint32_t *R, *G, *B;
   unsigned int width, height;
-  unsigned int shader_program, compute_program;
+  unsigned int shader_program, iterate_program, maxval_program;
   uint32_t *maxv;
   unsigned int maxv_ssbo, max_loc;
   unsigned int R_image_ID, Runit, G_image_ID, Gunit, B_image_ID, Bunit;

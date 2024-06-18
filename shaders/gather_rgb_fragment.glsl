@@ -11,12 +11,17 @@ out vec4 FragColor;
 in vec2 TexCoords;
 // Image load/store
 //
-uniform uvec3 maxval;
+//uniform uvec3 maxval;
 layout(binding = 0, r32ui) uniform uimage2D red_image;
 layout(binding = 1, r32ui) uniform uimage2D green_image;
 layout(binding = 2, r32ui) uniform uimage2D blue_image;
+layout(binding = 1) buffer maxvalues
+{
+    uint maxvalbuff[3];
+};
 void main()
 {
+    uvec3 maxval = uvec3(maxvalbuff[0], maxvalbuff[1], maxvalbuff[2]);
     // Get the fragment coordinates
     ivec2 imsize = imageSize(red_image).xy;
     ivec2 imcoords = ivec2(TexCoords*imsize);
@@ -27,5 +32,4 @@ void main()
     green = sigmoidal_contrast(0.05, 25, green);
     blue = sigmoidal_contrast(0.05, 25, blue);
    FragColor = vec4(red, green, blue, 1.0);
-
 }

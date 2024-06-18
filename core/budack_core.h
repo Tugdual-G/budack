@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-#define PTS_MSG_SIZE 64
+#define PTS_MSG_SIZE 32
 #define LENGTH_STRT 50000
 #define MAX_PATH_LENGTH 490
 #define PARAM_FNAME "param.txt"
