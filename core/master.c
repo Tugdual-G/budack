@@ -116,6 +116,7 @@ void recieve_and_draw(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
   write_progress(0);
   MPI_Request requ;
   int completion_flag = 0;
+
   pts_msg *recbuff = (pts_msg *)malloc(sizeof(pts_msg) * PTS_MSG_SIZE);
   if (!recbuff) {
     printf("Error: recbuff not allocated \n");
@@ -125,7 +126,6 @@ void recieve_and_draw(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
                 MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &requ);
 
   while (completion_flag < (world_size - 1)) {
-
     t0 = clock();
     MPI_Start(&requ);
     MPI_Wait(&requ, MPI_STATUS_IGNORE);
@@ -197,7 +197,9 @@ void recieve_and_render(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
 
   Render_object rdr_obj = {
       .width = nx / redu_fact,
+      .max_width = nx,
       .height = ny / redu_fact,
+      .max_height = ny,
       .Runit = 0,
       .Gunit = 1,
       .Bunit = 2,
@@ -228,19 +230,27 @@ void recieve_and_render(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
       .B = B,
       .redu_fact = redu_fact,
   };
+  if (redu_fact > 1) {
+    // define the lower left corner of the zoomed rendered region;
+    define_zoom(a, b, &args.i_ll_redu, &args.j_ll_redu, args.nx_redu,
+                args.ny_redu, nx, ny);
+  }
+
+  rdr_obj.i_ll = &args.i_ll_redu;
+  rdr_obj.j_ll = &args.j_ll_redu;
 
   render_init(&rdr_obj);
   render_loop(&rdr_obj, callback, &args);
   render_finalize(&rdr_obj);
   free(recbuff);
   write_progress(-2);
-  printf("\n Rmax = %u , Gmax = %u, Bmax = %u \n", *args.Rmax, *args.Gmax,
-         *args.Bmax);
+  /* printf("\n Rmax = %u , Gmax = %u, Bmax = %u \n", *args.Rmax, *args.Gmax, */
+  /*        *args.Bmax); */
   /* printf("\nmaster waiting time : %lf s \n", (double)t / CLOCKS_PER_SEC); */
 }
 
-void reduce(uint32_t *in, uint32_t *out, unsigned int in_nx, unsigned int in_ny,
-            unsigned int redu_fact);
+void down_sample(uint32_t *in, uint32_t *out, unsigned int in_nx,
+                 unsigned int in_ny, unsigned int redu_fact);
 void max32(uint32_t *X, size_t n, uint32_t *max);
 int callback(uint32_t *R_reduced, uint32_t *G_reduced, uint32_t *B_reduced,
              void *fargs) {
@@ -280,9 +290,15 @@ int callback(uint32_t *R_reduced, uint32_t *G_reduced, uint32_t *B_reduced,
   }
 
   if (args->redu_fact > 1) {
-    reduce(R, R_reduced, args->nx, args->ny, args->redu_fact);
-    reduce(G, G_reduced, args->nx, args->ny, args->redu_fact);
-    reduce(B, B_reduced, args->nx, args->ny, args->redu_fact);
+    /* down_sample(R, R_reduced, args->nx, args->ny, args->redu_fact); */
+    /* down_sample(G, G_reduced, args->nx, args->ny, args->redu_fact); */
+    /* down_sample(B, B_reduced, args->nx, args->ny, args->redu_fact); */
+    zoom(R, R_reduced, args->i_ll_redu, args->j_ll_redu, args->nx_redu,
+         args->ny_redu, args->nx);
+    zoom(G, G_reduced, args->i_ll_redu, args->j_ll_redu, args->nx_redu,
+         args->ny_redu, args->nx);
+    zoom(B, B_reduced, args->i_ll_redu, args->j_ll_redu, args->nx_redu,
+         args->ny_redu, args->nx);
   }
   max32(R_reduced, args->nx_redu * args->ny_redu, args->Rmax);
   max32(G_reduced, args->nx_redu * args->ny_redu, args->Gmax);
@@ -299,8 +315,8 @@ void max32(uint32_t *X, size_t n, uint32_t *max) {
   }
 }
 
-void reduce(uint32_t *in, uint32_t *out, unsigned int in_nx, unsigned int in_ny,
-            unsigned int redu_fact) {
+void down_sample(uint32_t *in, uint32_t *out, unsigned int in_nx,
+                 unsigned int in_ny, unsigned int redu_fact) {
 
   unsigned int out_nx = in_nx / redu_fact, out_ny = in_ny / redu_fact,
                area = redu_fact * redu_fact;
@@ -316,10 +332,48 @@ void reduce(uint32_t *in, uint32_t *out, unsigned int in_nx, unsigned int in_ny,
           out[i_out * out_nx + j_out] += in[i_in * in_nx + j_in];
         }
       }
-      /* out[i_out * out_nx + j_out] /= redu_fact * redu_fact; */
     }
     for (unsigned int j_out = 0; j_out < out_nx; ++j_out) {
       out[i_out * out_nx + j_out] /= area;
     }
+  }
+}
+
+void zoom(uint32_t *in, uint32_t *out, unsigned int i_ll, unsigned int j_ll,
+          unsigned int out_nx, unsigned int out_ny, unsigned int in_nx) {
+
+  for (unsigned int i = 0; i < out_ny; ++i) {
+    for (unsigned int j = 0; j < out_nx; ++j) {
+      out[i * out_nx + j] = in[(i + i_ll) * in_nx + j + j_ll];
+    }
+  }
+}
+
+void define_zoom(double x_b[2], double y_b[2], unsigned int *i_ll,
+                 unsigned int *j_ll, unsigned int nx_redu, unsigned int ny_redu,
+                 unsigned int nx, unsigned int ny) {
+
+  double dx = (x_b[1] - x_b[0]) / nx, x0 = ZOOM_CENTER_X, y0 = ZOOM_CENTER_Y;
+  double x_ll = (x0 - dx * nx_redu / 2.0);
+  double y_ll = (y0 - dx * ny_redu / 2.0);
+  double x_tr = (x0 + dx * nx_redu / 2.0);
+  double y_tr = (y0 + dx * ny_redu / 2.0);
+
+  if (y_ll > y_b[0]) {
+    *i_ll = (y_ll - y_b[0]) / dx;
+  } else {
+    *i_ll = 0;
+  }
+  if (y_tr >= y_b[1] - dx) {
+    *i_ll = ny - ny_redu;
+  }
+
+  if (x_ll > x_b[0]) {
+    *j_ll = (x_ll - x_b[0]) / dx;
+  } else {
+    *j_ll = 0;
+  }
+  if (x_tr >= x_b[1]) {
+    *j_ll = nx - nx_redu;
   }
 }

@@ -11,7 +11,7 @@ typedef struct {
   GLFWwindow *window;
   unsigned int shader_program, compute_program;
   unsigned int R_image_ID, Runit, G_image_ID, Gunit, B_image_ID, Bunit, width,
-      height;
+      height, *i_ll, *j_ll, max_width, max_height;
   unsigned int VAO;
   unsigned int VBO;
   uint32_t *R, *G, *B, Rmax, Gmax, Bmax;
@@ -29,4 +29,7 @@ int render_finalize(Render_object *rdr_obj);
 
 void set_image2D(unsigned int unit, unsigned int *imageID, unsigned int width,
                  unsigned int height, uint32_t *img_data);
+
+void keyboard_callback(GLFWwindow *window, int key, int scancode, int action,
+                       int mods);
 #endif // RENDER_H_

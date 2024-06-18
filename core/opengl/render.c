@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define KEY_MOVE_DIST 50
+
 GLenum glCheckError_(const char *file, int line);
 #define glCheckError() glCheckError_(__FILE__, __LINE__)
 
@@ -26,6 +28,9 @@ void render_init(Render_object *rdr_obj) {
     exit(1);
   }
   glfwMakeContextCurrent(rdr_obj->window);
+  glfwSetWindowUserPointer(rdr_obj->window, rdr_obj);
+  glfwSetKeyCallback(rdr_obj->window, keyboard_callback);
+
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     printf("Failed to initialize GLAD\n");
     exit(1);
@@ -124,7 +129,7 @@ int render_loop(Render_object *rdr_obj,
 
   while (!glfwWindowShouldClose(rdr_obj->window) && flag) {
     keep_aspect_ratio(rdr_obj->window, rdr_obj->width, rdr_obj->height);
-    /* processInput(rdr_obj->window); */
+    processInput(rdr_obj->window);
     glClear(GL_COLOR_BUFFER_BIT);
 
     flag = data_update_function(rdr_obj->R, rdr_obj->G, rdr_obj->B, fargs);
@@ -185,6 +190,48 @@ void set_image2D(unsigned int unit, unsigned int *imageID, unsigned int width,
 
   glBindImageTexture(unit, *imageID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
   glCheckError();
+}
+
+void keyboard_callback(GLFWwindow *window, int key,
+                       __attribute__((unused)) int scancode, int action,
+                       __attribute__((unused)) int mods) {
+
+  Render_object *rdr = glfwGetWindowUserPointer(window);
+  if (action == GLFW_PRESS) {
+    switch (key) {
+    case GLFW_KEY_RIGHT:
+      if (*rdr->j_ll + KEY_MOVE_DIST + rdr->width < rdr->max_width) {
+        *rdr->j_ll += KEY_MOVE_DIST;
+      } else {
+        *rdr->j_ll = rdr->max_width - rdr->width;
+      }
+      break;
+
+    case GLFW_KEY_LEFT:
+      if (*rdr->j_ll - KEY_MOVE_DIST > 0) {
+        *rdr->j_ll -= KEY_MOVE_DIST;
+      } else {
+        *rdr->j_ll = 0;
+      }
+      break;
+
+    case GLFW_KEY_DOWN:
+      if (*rdr->i_ll - KEY_MOVE_DIST > 0) {
+        *rdr->i_ll -= KEY_MOVE_DIST;
+      } else {
+        *rdr->i_ll = 0;
+      }
+      break;
+
+    case GLFW_KEY_UP:
+      if (*rdr->i_ll + KEY_MOVE_DIST + rdr->height < rdr->max_height) {
+        *rdr->i_ll += KEY_MOVE_DIST;
+      } else {
+        *rdr->j_ll = rdr->max_height - rdr->height;
+      }
+      break;
+    }
+  }
 }
 
 GLenum glCheckError_(const char *file, int line) {
