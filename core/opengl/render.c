@@ -98,8 +98,8 @@ void render_init(Render_object *rdr_obj) {
 }
 
 int render_loop(Render_object *rdr_obj,
-                int (*data_update_function)(uint32_t *R, uint32_t *G,
-                                            uint32_t *B, void *fargs),
+                int (*data_update_function)(uint16_t *R, uint16_t *G,
+                                            uint16_t *B, void *fargs),
                 void *fargs) {
 
   int flag = 1;
@@ -116,13 +116,13 @@ int render_loop(Render_object *rdr_obj,
                  rdr_obj->Bmax);
 
     glTextureSubImage2D(rdr_obj->R_image_ID, 0, 0, 0, rdr_obj->width,
-                        rdr_obj->height, GL_RED_INTEGER, GL_UNSIGNED_INT,
+                        rdr_obj->height, GL_RED_INTEGER, GL_UNSIGNED_SHORT,
                         rdr_obj->R);
     glTextureSubImage2D(rdr_obj->G_image_ID, 0, 0, 0, rdr_obj->width,
-                        rdr_obj->height, GL_RED_INTEGER, GL_UNSIGNED_INT,
+                        rdr_obj->height, GL_RED_INTEGER, GL_UNSIGNED_SHORT,
                         rdr_obj->G);
     glTextureSubImage2D(rdr_obj->B_image_ID, 0, 0, 0, rdr_obj->width,
-                        rdr_obj->height, GL_RED_INTEGER, GL_UNSIGNED_INT,
+                        rdr_obj->height, GL_RED_INTEGER, GL_UNSIGNED_SHORT,
                         rdr_obj->B);
 
     // render container
@@ -145,13 +145,13 @@ int render_finalize(Render_object *rdr_obj) {
 }
 
 void set_image2D(unsigned int unit, unsigned int *imageID, unsigned int width,
-                 unsigned int height, uint32_t *img_data) {
+                 unsigned int height, uint16_t *img_data) {
 
   glGenTextures(1, imageID);
   glBindTexture(GL_TEXTURE_2D, *imageID);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, width, height, 0, GL_RED_INTEGER,
-               GL_UNSIGNED_INT, img_data);
-  glBindImageTexture(unit, *imageID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_R16UI, width, height, 0, GL_RED_INTEGER,
+               GL_UNSIGNED_SHORT, img_data);
+  glBindImageTexture(unit, *imageID, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI);
   glCheckError();
 }
 

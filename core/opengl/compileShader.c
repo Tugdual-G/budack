@@ -39,6 +39,7 @@ unsigned int compileVertexShader(const char *sourcefname) {
     printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n");
     printf("%s\n", infoLog);
   }
+  fclose(fp);
   return v_shader;
 }
 

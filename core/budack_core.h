@@ -28,7 +28,7 @@ typedef struct {
   unsigned int cycles_per_update;
 } Param;
 
-void draw_trajectories(uint32_t *M, double x0, double y0, unsigned int nit,
+void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
                        double *x_b, double *y_b, unsigned int nx,
                        unsigned int ny);
 
@@ -43,7 +43,7 @@ void border_start(unsigned int depth, double *starting_pts,
 void save(const char fname[], void *data, unsigned int size,
           unsigned int n_elements);
 
-void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B);
+void mirror_traj(unsigned int ny, unsigned int nx, uint16_t *B);
 
 void parse(int argc, char *argv[], Param *param);
 

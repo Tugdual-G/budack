@@ -62,8 +62,8 @@ int write_tiff_16bitsRGB(const char *fname, uint16_t *R, uint16_t *G,
   return 0;
 }
 
-int write_tiff_16bits_grayscale(const char *fname, uint8_t *gray_scale,
-                                unsigned width, unsigned height) {
+int write_tiff_8bits_grayscale(const char *fname, uint8_t *gray_scale,
+                               unsigned width, unsigned height) {
 
   // Open the TIFF file for writing
   TIFF *tif = TIFFOpen(fname, "w");
@@ -77,7 +77,7 @@ int write_tiff_16bits_grayscale(const char *fname, uint8_t *gray_scale,
   TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32_t)width);
   TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32_t)height);
   TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1); // 3 channels (RGB)
-  TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);   // 16 bits per channel
+  TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);   // 8 bits per channel
   TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 1);
   TIFFSetField(tif, TIFFTAG_SOFTWARE, "Budack");
   /* TIFFSetField(tif, TIFFTAG_IMAGEDESCRIPTION, ""); */
@@ -98,7 +98,7 @@ int write_tiff_16bits_grayscale(const char *fname, uint8_t *gray_scale,
 
   // Close the TIFF file
   TIFFClose(tif);
-  printf("\n16 bits grayscale TIFF file created successfully, %s\n", fname);
+  printf("\n8 bits grayscale TIFF file created successfully, %s\n", fname);
   return 0;
 }
 
@@ -111,5 +111,17 @@ void normalize_32_to_16bits(uint32_t *in, uint16_t *out, size_t n) {
   }
   for (size_t k = 0; k < n; k++) {
     *(out + k) = 65535.0 * (double)*(in + k) / max;
+  }
+}
+
+void normalize_16bits(uint16_t *inout, size_t n) {
+  double max = 0;
+  for (size_t k = 0; k < n; k++) {
+    if (*(inout + k) > max) {
+      max = *(inout + k);
+    }
+  }
+  for (size_t k = 0; k < n; k++) {
+    *(inout + k) = 65535.0 * (double)*(inout + k) / max;
   }
 }

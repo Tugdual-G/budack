@@ -23,7 +23,7 @@ int master(int world_size, Param param, double a[2], double b[2]) {
                maxit = *param.maxit, minit = *param.minit;
   double D = *param.D;
   // in bytes
-  max_memory = 3 * nx * ny * (sizeof(uint16_t) + sizeof(uint32_t)) +
+  max_memory = 3 * nx * ny * (sizeof(uint16_t) + sizeof(uint16_t)) +
                LENGTH_STRT * sizeof(double);
   // In GiB
   max_memory /= (double)1024 * 1024;
@@ -48,51 +48,33 @@ int master(int world_size, Param param, double a[2], double b[2]) {
   //   Cumputing the trajectories
   ////////////////////////////////////////////////
 
-  uint32_t *R_32 = NULL, *G_32 = NULL, *B_32 = NULL;
-  R_32 = (uint32_t *)calloc(nx * ny, sizeof(uint32_t));
-  G_32 = (uint32_t *)calloc(nx * ny, sizeof(uint32_t));
-  B_32 = (uint32_t *)calloc(nx * ny, sizeof(uint32_t));
-  if (!B_32 | !R_32 | !G_32) {
+  uint16_t *R_16 = NULL, *G_16 = NULL, *B_16 = NULL;
+  R_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
+  G_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
+  B_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
+  if (!B_16 | !R_16 | !G_16) {
     printf("\n Error, no memory allocated for trajectories sum \n");
     exit(1);
   }
   if (param.cycles_per_update != 0) {
-    recieve_and_render(R_32, G_32, B_32, a, b, nx, ny, world_size,
+    recieve_and_render(R_16, G_16, B_16, a, b, nx, ny, world_size,
                        param.cycles_per_update);
   } else {
-    recieve_and_draw(R_32, G_32, B_32, a, b, nx, ny, world_size);
+    recieve_and_draw(R_16, G_16, B_16, a, b, nx, ny, world_size);
   }
 
+  MPI_Barrier(MPI_COMM_WORLD);
   printf("\nTime elapsed computing trajectories %f s \n",
          (double)(clock() - t_begin) / CLOCKS_PER_SEC);
 
-  uint16_t *R_16 = NULL;
-  uint16_t *G_16 = NULL;
-  uint16_t *B_16 = NULL;
+  mirror_traj(ny, nx, R_16);
+  mirror_traj(ny, nx, G_16);
+  mirror_traj(ny, nx, B_16);
+  normalize_16bits(R_16, nx * ny);
+  normalize_16bits(G_16, nx * ny);
+  normalize_16bits(B_16, nx * ny);
 
   // Storing variables on disk
-  mirror_traj(ny, nx, R_32); // Make the image symetric
-  mirror_traj(ny, nx, G_32); // Make the image symetric
-  mirror_traj(ny, nx, B_32); // Make the image symetric
-  R_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
-  G_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
-  B_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
-  if (!R_16 | !G_16 | !B_16) {
-    printf("\n Error, no memory allocated for RGB arrays \n");
-    exit(1);
-  }
-
-  /* save("r.uint32", R_32, sizeof(uint32_t), nx * ny); */
-  /* save("g.uint32", G_32, sizeof(uint32_t), nx * ny); */
-  /* save("b.uint32", B_32, sizeof(uint32_t), nx * ny); */
-
-  normalize_32_to_16bits(R_32, R_16, nx * ny);
-  free(R_32);
-  normalize_32_to_16bits(G_32, G_16, nx * ny);
-  free(G_32);
-  normalize_32_to_16bits(B_32, B_16, nx * ny);
-  free(B_32);
-
   unsigned outdir_str_len = strlen(param.output_dir);
   char filename[MAX_PATH_LENGTH + 21] = {'\0'};
   strncpy(filename, param.output_dir, MAX_PATH_LENGTH);
@@ -109,7 +91,7 @@ int master(int world_size, Param param, double a[2], double b[2]) {
   return 0;
 }
 
-void recieve_and_draw(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
+void recieve_and_draw(uint16_t *R, uint16_t *G, uint16_t *B, double a[2],
                       double b[2], unsigned int nx, unsigned int ny,
                       int world_size) {
   clock_t t0, t = 0;
@@ -160,20 +142,20 @@ void recieve_and_draw(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
   printf("\nmaster waiting time : %lf s \n", (double)t / CLOCKS_PER_SEC);
 }
 
-void recieve_and_render(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
+void recieve_and_render(uint16_t *R, uint16_t *G, uint16_t *B, double a[2],
                         double b[2], unsigned int nx, unsigned int ny,
                         int world_size, unsigned int cycles_per_update) {
 
   unsigned int redu_fact = 1;
-  uint32_t *R_reduced = NULL, *G_reduced = NULL, *B_reduced = NULL;
+  uint16_t *R_reduced = NULL, *G_reduced = NULL, *B_reduced = NULL;
   if (nx > MAX_RENDER_SIZE * 2 - 1) {
     redu_fact = nx / MAX_RENDER_SIZE;
     R_reduced =
-        (uint32_t *)calloc(nx / redu_fact * ny / redu_fact, sizeof(uint32_t));
+        (uint16_t *)calloc(nx / redu_fact * ny / redu_fact, sizeof(uint16_t));
     G_reduced =
-        (uint32_t *)calloc(nx / redu_fact * ny / redu_fact, sizeof(uint32_t));
+        (uint16_t *)calloc(nx / redu_fact * ny / redu_fact, sizeof(uint16_t));
     B_reduced =
-        (uint32_t *)calloc(nx / redu_fact * ny / redu_fact, sizeof(uint32_t));
+        (uint16_t *)calloc(nx / redu_fact * ny / redu_fact, sizeof(uint16_t));
     if (!B_reduced | !R_reduced | !G_reduced) {
       printf("\n Error, no memory allocated for reduced RGB sum \n");
       exit(1);
@@ -203,9 +185,9 @@ void recieve_and_render(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
       .Runit = 0,
       .Gunit = 1,
       .Bunit = 2,
-      .Rmax = MAX_UINT,
-      .Gmax = MAX_UINT,
-      .Bmax = MAX_UINT,
+      .Rmax = MAX_UINT16,
+      .Gmax = MAX_UINT16,
+      .Bmax = MAX_UINT16,
       .R = R_reduced,
       .G = G_reduced,
       .B = B_reduced,
@@ -244,21 +226,20 @@ void recieve_and_render(uint32_t *R, uint32_t *G, uint32_t *B, double a[2],
   render_finalize(&rdr_obj);
   free(recbuff);
   write_progress(-2);
-  /* printf("\n Rmax = %u , Gmax = %u, Bmax = %u \n", *args.Rmax, *args.Gmax, */
-  /*        *args.Bmax); */
-  /* printf("\nmaster waiting time : %lf s \n", (double)t / CLOCKS_PER_SEC); */
+  printf("\nR_max=%u, G_max=%u, B_max=%u \n", *args.Rmax, *args.Gmax,
+         *args.Bmax);
 }
 
-void down_sample(uint32_t *in, uint32_t *out, unsigned int in_nx,
+void down_sample(uint16_t *in, uint16_t *out, unsigned int in_nx,
                  unsigned int in_ny, unsigned int redu_fact);
-void max32(uint32_t *X, size_t n, uint32_t *max);
-int callback(uint32_t *R_reduced, uint32_t *G_reduced, uint32_t *B_reduced,
+void max16(uint16_t *X, size_t n, uint16_t *max);
+int callback(uint16_t *R_reduced, uint16_t *G_reduced, uint16_t *B_reduced,
              void *fargs) {
 
   static int completion_flag = 0;
 
   Fargs *args = (Fargs *)fargs;
-  uint32_t *R = args->R, *G = args->G, *B = args->B;
+  uint16_t *R = args->R, *G = args->G, *B = args->B;
   pts_msg *rec = args->recbuff;
 
   unsigned int it = 0;
@@ -300,13 +281,13 @@ int callback(uint32_t *R_reduced, uint32_t *G_reduced, uint32_t *B_reduced,
     zoom(B, B_reduced, args->i_ll_redu, args->j_ll_redu, args->nx_redu,
          args->ny_redu, args->nx);
   }
-  max32(R_reduced, args->nx_redu * args->ny_redu, args->Rmax);
-  max32(G_reduced, args->nx_redu * args->ny_redu, args->Gmax);
-  max32(B_reduced, args->nx_redu * args->ny_redu, args->Bmax);
+  max16(R_reduced, args->nx_redu * args->ny_redu, args->Rmax);
+  max16(G_reduced, args->nx_redu * args->ny_redu, args->Gmax);
+  max16(B_reduced, args->nx_redu * args->ny_redu, args->Bmax);
   return (completion_flag != (args->world_size - 1));
 }
 
-void max32(uint32_t *X, size_t n, uint32_t *max) {
+void max16(uint16_t *X, size_t n, uint16_t *max) {
   *max = 0;
   for (size_t i = 0; i < n; ++i) {
     if (X[i] > *max) {
@@ -315,7 +296,7 @@ void max32(uint32_t *X, size_t n, uint32_t *max) {
   }
 }
 
-void down_sample(uint32_t *in, uint32_t *out, unsigned int in_nx,
+void down_sample(uint16_t *in, uint16_t *out, unsigned int in_nx,
                  unsigned int in_ny, unsigned int redu_fact) {
 
   unsigned int out_nx = in_nx / redu_fact, out_ny = in_ny / redu_fact,
@@ -339,7 +320,7 @@ void down_sample(uint32_t *in, uint32_t *out, unsigned int in_nx,
   }
 }
 
-void zoom(uint32_t *in, uint32_t *out, unsigned int i_ll, unsigned int j_ll,
+void zoom(uint16_t *in, uint16_t *out, unsigned int i_ll, unsigned int j_ll,
           unsigned int out_nx, unsigned int out_ny, unsigned int in_nx) {
 
   for (unsigned int i = 0; i < out_ny; ++i) {

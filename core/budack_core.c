@@ -49,7 +49,7 @@ double randomdouble(double min, double max) {
   return r;
 }
 
-void draw_trajectories(uint32_t *M, double x0, double y0, unsigned int nit,
+void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
                        double *x_b, double *y_b, unsigned int nx,
                        unsigned int ny) {
   // Locating the points in space
@@ -103,13 +103,13 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
   // Locating the points in space
   // y for imaginary points
   // dx is the step of the grid
-  double x, y, x0, y0, x2, y2;
+  double x, y, x0, y0, x2, y2, x_old, y_old;
 
   // - itraj : number of trajectories satisfying the
   //           higgher minimal escape time.
   // - it : number of iteration for one trajectory.
   size_t i_hint = 0;
-  unsigned int it = 0;
+  unsigned int it = 0, cycle_it = 0, max_cycle = 2;
   unsigned int n0 = 0, n1 = 0;
 
   // - npts : total numbers of points visited for
@@ -133,6 +133,10 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
     x0 = starting_pts[(i_hint + 1) % (2 * length_strt)] + gaussrand(0.01);
 
     it = 0;
+    cycle_it = 0;
+    max_cycle = 2;
+    x_old = x0;
+    y_old = y0;
     x = x0;
     y = y0;
     x2 = x * x;
@@ -146,8 +150,19 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
       x2 = x * x;
       y2 = y * y;
       ++it;
+      ++cycle_it;
       if (x2 + y2 > 4) {
         diverge = 1;
+        break;
+      }
+      if (x_old == x && y_old == y) { // cycle detection
+        break;
+      }
+      if (cycle_it == max_cycle) {
+        max_cycle *= 2;
+        cycle_it = 0;
+        x_old = x;
+        y_old = y;
       }
     }
     if (diverge == 1 && it > minit) {
@@ -216,12 +231,12 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
   MPI_Wait(&req, MPI_STATUS_IGNORE);
   MPI_Isend(sended_points, sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
             MPI_COMM_WORLD, &req);
+  MPI_Barrier(MPI_COMM_WORLD);
   printf("\nslave waiting time rank %i : %lf s \n", rank,
          (double)t / CLOCKS_PER_SEC);
 }
 
-int border(unsigned int depth, long int length_strt,
-           double *restrict starting_pts) {
+int border(unsigned int depth, long int length_strt, double *starting_pts) {
   // Fill starting_pts with a list of random points at the boundary
   // of the mandelbrot set, if a file already exist, load them, else,
   // generate the points with the border_start function and write them
@@ -416,7 +431,7 @@ void save(const char fname[], void *data, unsigned int size,
   fclose(fp);
 }
 
-void mirror_traj(unsigned int ny, unsigned int nx, unsigned int *B) {
+void mirror_traj(unsigned int ny, unsigned int nx, uint16_t *B) {
   // Ensure symetry and add density by adding a mirrored version
   // of the image to itself.
   unsigned long k;
