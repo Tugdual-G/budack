@@ -37,9 +37,9 @@ void render_init(Render_object *rdr_obj) {
   }
 
   // Compile shaders
-  unsigned int vertexShader = compileVertexShader("shaders/vertexShader.glsl");
+  unsigned int vertexShader = compileVertexShader("shaders/vertex_shader.glsl");
   unsigned int fragmentShader =
-      compileFragmentShader("shaders/rgbassemble.glsl");
+      compileFragmentShader("shaders/fragment_shader.glsl");
   rdr_obj->shader_program = linkShaders(vertexShader, fragmentShader);
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);

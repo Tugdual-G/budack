@@ -16,7 +16,6 @@ Compile with,
 
     make -C core
         
-
 Just try the default parameters by running (see requirements),
 
     ./exe.sh
@@ -27,11 +26,11 @@ Editing the script allow to tune the parameters easily.
 
 The project use tree different styles of implementation :
 * The __main__ branch is implemented in a master/slave scheme, which is slower but more suited to large images ( > 8000 x 8000 px) and live rendering.
- You can navigate the fractal during computation using the arrow keys (for images larger than 2000px). This branch is optimized to run on 5 cores.
+ You can navigate the fractal during computation using the arrow keys (for images larger than 2000px). The optimal number of core will depend on the size of the image, and the chosen escape times.
 
 * The __gather__ branch uses a "compute then gather" scheme which is really fast but ends with huge data transferts in the case of large images, which take a toll on the RAM.
 
-* The __shader__ branch is GPU-oriented, it was just an excuse to discover compute-shaders, since the GPU is not well suited to this problem due to the massive amount of random access writes, for now it's garbage. 
+* The __shader__ branch is GPU-oriented, it was just an excuse to discover compute-shaders, however the GPU is not well suited to this problem due to the massive amount of random access writes, for now it's garbage. 
 
 ![gif example](images_examples/live_render.gif)
 

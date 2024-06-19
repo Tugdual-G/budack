@@ -28,6 +28,6 @@ void main()
     green = sigmoidal_contrast(0.05, 15, green);
     blue = sigmoidal_contrast(0.05, 15, blue);
     // Assemble the color
-   FragColor = vec4(red, green, blue, 1.0);
+    FragColor = vec4(red, green, blue, 1.0);
 
 }
