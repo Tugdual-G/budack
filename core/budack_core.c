@@ -55,8 +55,9 @@ void draw_trajectories(uint32_t *M, double x0, double y0, unsigned int nit,
   // Locating the points in space
   // y for imaginary points
   // dx is the step of the grid
-  double dx, x, y, x2, y2;
-  dx = (x_b[1] - x_b[0]) / nx;
+  double x, y, x2, y2;
+  // dx = (x_b[1] - x_b[0]) / nx;
+  double inv_dx = (double)nx / (x_b[1] - x_b[0]);
 
   // - it : number of iteration for one trajectory.
   int i = 0, j = 0;
@@ -65,8 +66,8 @@ void draw_trajectories(uint32_t *M, double x0, double y0, unsigned int nit,
   y = y0;
   x2 = x * x;
   y2 = y * y;
-  i = (y - y_b[0]) / dx;
-  j = (x - x_b[0]) / dx;
+  i = (y - y_b[0]) * inv_dx;
+  j = (x - x_b[0]) * inv_dx;
   if (i >= 0 && i < (int)ny && j >= 0 && j < (int)nx) {
     ++*(M + nx * i + j);
   }
@@ -75,8 +76,8 @@ void draw_trajectories(uint32_t *M, double x0, double y0, unsigned int nit,
     x = x2 - y2 + x0;
     x2 = x * x;
     y2 = y * y;
-    i = (y - y_b[0]) / dx;
-    j = (x - x_b[0]) / dx;
+    i = (y - y_b[0]) * inv_dx;
+    j = (x - x_b[0]) * inv_dx;
     if (i >= 0 && i < (int)ny && j >= 0 && j < (int)nx) {
       ++*(M + nx * i + j);
     }
