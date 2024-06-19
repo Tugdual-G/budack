@@ -6,7 +6,7 @@
 ![alt text](images_examples/zoom1.png)
 
 ## Presentation
-The "budhabrot" is a lesser-known representation of the Mandelbrot set, consiting in trajectories of the points rather than their escape-times. 
+The "budhabrot" is a lesser-known representation of the Mandelbrot set, consisting in plotting the trajectories of the points rather than their initial positions. 
 This representation is much more computationally-intensive since, contrary to more traditional techniques,
 it is not possible to use only the local information to render a region of the set.
 Furthermore, plotting the trajectories also involve lots of random access writes. 
