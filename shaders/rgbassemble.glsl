@@ -24,9 +24,9 @@ void main()
     float red = float(imageLoad(redImage, imcoords).r)/maxval.x;
     float green = float(imageLoad(greenImage, imcoords).r)/maxval.y;
     float blue = float(imageLoad(blueImage, imcoords).r)/maxval.z;
-    red = sigmoidal_contrast(0.08, 15, red);
-    green = sigmoidal_contrast(0.08, 15, green);
-    blue = sigmoidal_contrast(0.08, 15, blue);
+    red = sigmoidal_contrast(0.05, 15, red);
+    green = sigmoidal_contrast(0.05, 15, green);
+    blue = sigmoidal_contrast(0.05, 15, blue);
     // Assemble the color
    FragColor = vec4(red, green, blue, 1.0);
 
