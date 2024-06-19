@@ -5,7 +5,18 @@
 
 ![alt text](images_examples/zoom1.png)
 
+## Presentation
+The "budhabrot" is a lesser-known representation of the Mandelbrot set, consiting in trajectories of the points rather than their escape-times. 
+This representation is much more computationally-intensive since, contrary to more traditional techniques,
+it is not possible to use only the local information to render a region of the set.
+Furthermore, plotting the trajectories also involve lots of random access writes. 
+
 ## Usage
+Compile with,
+
+    make -C core
+        
+
 Just try the default parameters by running (see requirements),
 
     ./exe.sh
@@ -16,7 +27,10 @@ Editing the script allow to tune the parameters easily.
 
 The project use tree different styles of implementation :
 * The __main__ branch is implemented in a master/slave scheme, which is slower but more suited to large images ( > 8000 x 8000 px) and live rendering.
+ You can navigate the fractal during computation using the arrow keys (for images larger than 2000px). This branch is optimized to run on 5 cores.
+
 * The __gather__ branch uses a "compute then gather" scheme which is really fast but ends with huge data transferts in the case of large images, which take a toll on the RAM.
+
 * The __shader__ branch is GPU-oriented, it was just an excuse to discover compute-shaders, since the GPU is not well suited to this problem due to the massive amount of random access writes, for now it's garbage. 
 
 ![gif example](images_examples/live_render.gif)
@@ -55,11 +69,3 @@ The script exe.sh add more details to the function of each parameter in comments
 
 **Note**   
 Because of the lazy memory allocation by Linux kernel, the memory usage will start very low and grow as new pixels are visited by the trajectories. To avoid any surprise, the total allocated size for the arrays is shown at the beginning of the program, in practice the ram usage will be lower than the estimation.
-
-## Images processing
-- Use ImageMagick to process the images.
-- Use a gamma function on the 16 bits grayscale to enhance smoothly the trajectories, which are then turned to 8 bits grayscale to generate images from 3x8 bites rgb channels. See the script *gamma.sh* This script is mostly needed for high resolution images. 
-- The gamma function can also help distinguish the contribution of the different RGB channels.
-
-
-

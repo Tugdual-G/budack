@@ -5,22 +5,20 @@
 CC = mpicc
 CFLAGS = -Wall -Wextra
 LDFLAGS_main = -lm
-LDFLAGS = -lm -ltiff -fPIC
-LDLIBS = -L. -lslave -lmaster -lrender
+LDFLAGS = -lm -fPIC
+LDLIBS = -L. -lslave -lmaster
 # Targets
 all: budack
 
-budack: main_master_slaves.c libslave.so libmaster.so librender.so
+budack: main_master_slaves.c libslave.so libmaster.so
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS) $(LDFLAGS_main)
 
 libslave.so: slave.c budack_core.c
 	$(CC) $(CFLAGS) -shared -o $@ $^ $(LDFLAGS) -O2
 
-libmaster.so: master.c budack_core.c tiff_images.c librender.so
-	$(CC) $(CFLAGS) -L. -shared -o $@ $^ $(LDFLAGS) -lrender -fopenmp -O2
+libmaster.so: master.c budack_core.c tiff_images.c opengl/src/glad.c opengl/display_window.c opengl/compileShader.c opengl/render.c
+	$(CC) $(CFLAGS) -I opengl -L. -shared -o $@ $^ $(LDFLAGS) -ltiff -lGL -lglfw -O2
 
-librender.so: opengl/render.c opengl/compileShader.c opengl/display_window.c opengl/src/glad.c
-	gcc $(CFLAGS) -I opengl -shared $^ -o $@ -lGL -lglfw -fPIC
 
 clean:
 	rm -f *.o budack *.so
