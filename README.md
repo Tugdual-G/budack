@@ -26,7 +26,7 @@ Editing the script allow to tune the parameters easily.
 
 The project use tree different styles of implementation :
 * The __main__ branch is implemented in a master/slave scheme, which is slower but more suited to large images ( > 8000 x 8000 px) and live rendering.
- You can navigate the fractal during computation using the arrow keys (for images larger than 2000px). The optimal number of core will depend on the size of the image, and the chosen escape times.
+ You can navigate the fractal during computation using the arrow keys (for images larger than 2000px). The optimal number of core will depend on the size of the image and the chosen escape times.
 
 * The __gather__ branch uses a "compute then gather" scheme which is really fast but ends with huge data transferts in the case of large images, which take a toll on the RAM.
 

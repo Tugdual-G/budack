@@ -13,6 +13,7 @@
 #include <time.h>
 #include <unistd.h>
 
+double get_time_diff_nano(struct timespec t1, struct timespec t0);
 int master(int world_size, Param param, double a[2], double b[2]) {
 
   printf("Number of cores : %i \n", world_size);
@@ -41,7 +42,8 @@ int master(int world_size, Param param, double a[2], double b[2]) {
   // There is no need to parallelise this part
 
   unsigned int length_brdr = LENGTH_STRT / (world_size - 1);
-  clock_t t_begin = clock();
+  struct timespec time_1, time_0;
+  clock_gettime(CLOCK_REALTIME, &time_0);
   border(depth, length_brdr, NULL);
 
   ////////////////////////////////////////////////
@@ -64,8 +66,9 @@ int master(int world_size, Param param, double a[2], double b[2]) {
   }
 
   MPI_Barrier(MPI_COMM_WORLD);
-  printf("\nTime elapsed computing trajectories %f s \n",
-         (double)(clock() - t_begin) / CLOCKS_PER_SEC);
+  clock_gettime(CLOCK_REALTIME, &time_1);
+  printf("\nTime elapsed computing trajectories %lf s \n",
+         get_time_diff_nano(time_1, time_0) / 1E9);
 
   mirror_traj(ny, nx, R_16);
   mirror_traj(ny, nx, G_16);
@@ -230,8 +233,8 @@ void recieve_and_render(uint16_t *R, uint16_t *G, uint16_t *B, double a[2],
          *args.Bmax);
 }
 
-void down_sample(uint16_t *in, uint16_t *out, unsigned int in_nx,
-                 unsigned int in_ny, unsigned int redu_fact);
+void downsample(uint16_t *in, uint16_t *out, unsigned int in_nx,
+                unsigned int in_ny, unsigned int redu_fact);
 void max16(uint16_t *X, size_t n, uint16_t *max);
 int callback(uint16_t *R_reduced, uint16_t *G_reduced, uint16_t *B_reduced,
              void *fargs) {
@@ -271,9 +274,9 @@ int callback(uint16_t *R_reduced, uint16_t *G_reduced, uint16_t *B_reduced,
   }
 
   if (args->redu_fact > 1) {
-    /* down_sample(R, R_reduced, args->nx, args->ny, args->redu_fact); */
-    /* down_sample(G, G_reduced, args->nx, args->ny, args->redu_fact); */
-    /* down_sample(B, B_reduced, args->nx, args->ny, args->redu_fact); */
+    /* downsample(R, R_reduced, args->nx, args->ny, args->redu_fact); */
+    /* downsample(G, G_reduced, args->nx, args->ny, args->redu_fact); */
+    /* downsample(B, B_reduced, args->nx, args->ny, args->redu_fact); */
     zoom(R, R_reduced, args->i_ll_redu, args->j_ll_redu, args->nx_redu,
          args->ny_redu, args->nx);
     zoom(G, G_reduced, args->i_ll_redu, args->j_ll_redu, args->nx_redu,
@@ -296,8 +299,8 @@ void max16(uint16_t *X, size_t n, uint16_t *max) {
   }
 }
 
-void down_sample(uint16_t *in, uint16_t *out, unsigned int in_nx,
-                 unsigned int in_ny, unsigned int redu_fact) {
+void downsample(uint16_t *in, uint16_t *out, unsigned int in_nx,
+                unsigned int in_ny, unsigned int redu_fact) {
 
   unsigned int out_nx = in_nx / redu_fact, out_ny = in_ny / redu_fact,
                area = redu_fact * redu_fact;
@@ -357,4 +360,8 @@ void define_zoom(double x_b[2], double y_b[2], unsigned int *i_ll,
   if (x_tr >= x_b[1]) {
     *j_ll = nx - nx_redu;
   }
+}
+
+double get_time_diff_nano(struct timespec t1, struct timespec t0) {
+  return (1000000000 * (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec));
 }
