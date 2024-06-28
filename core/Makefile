@@ -4,7 +4,7 @@
 # Variables
 CC = mpicc
 CFLAGS = -Wall -Wextra
-LDFLAGS_main = -lm
+LDFLAGS_main =-lm '-Wl,-rpath,$$ORIGIN'
 LDFLAGS = -lm -fPIC
 LDLIBS = -L. -lslave -lmaster
 # Targets

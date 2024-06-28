@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./core
 # This is the main executable.
 # This script generate the trajectories and the images.
 
