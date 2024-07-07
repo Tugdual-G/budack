@@ -9,6 +9,9 @@
 
 int write_tiff_16bitsRGB(const char *fname, uint16_t *R, uint16_t *G,
                          uint16_t *B, unsigned width, unsigned height) {
+  /*
+  ** Writes a 16 bits per channels tiff image to disk.
+  */
 
   size_t size = width * height;
 
@@ -67,6 +70,9 @@ int write_tiff_16bitsRGB(const char *fname, uint16_t *R, uint16_t *G,
 
 int write_tiff_8bits_grayscale(const char *fname, uint8_t *gray_scale,
                                unsigned width, unsigned height) {
+  /*
+  ** Writes a 8 bits grayscale image to disk.
+  */
 
   // Open the TIFF file for writing
   TIFF *tif = TIFFOpen(fname, "w");

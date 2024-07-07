@@ -16,7 +16,7 @@
 #define PI 3.141592654
 
 double min3_double(double x, double y, double z) {
-  // minimum value between 3 numbers
+  // Returns the minimum value between 3 numbers
   double min = x < y ? x : y;
   min = min < z ? min : z;
   return min;
@@ -27,9 +27,8 @@ double min3_double(double x, double y, double z) {
 /*   return max; */
 /* } */
 
-double gaussrand(double dx) {
-  // generate a random double.
-  // Gaussian distribution.
+double random_normal(double sigma) {
+  // Returns normally distributed random double.
   static double U, V;
   static int phase = 0;
   double Z;
@@ -43,11 +42,11 @@ double gaussrand(double dx) {
 
   phase = 1 - phase;
 
-  return Z * dx;
+  return Z * sigma;
 }
 
-double randomdouble(double min, double max) {
-  // Uniform distribution.
+double random_uniform(double min, double max) {
+  // Returns a uniformlly distributed double.
   double r, range = max - min;
   r = (double)rand() / (double)(RAND_MAX);
   r = min + r * range;
@@ -57,10 +56,23 @@ double randomdouble(double min, double max) {
 void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
                        double *x_b, double *y_b, unsigned int nx,
                        unsigned int ny) {
+  /*
+  ** Fill the input array with the trajectory of the provided starting point.
+  ** Input :
+  **  - x0, y0    starting points
+  **  - nit       number of iterations to perform
+  **  - x_b, y_b  boundaries of the domain
+  **  - nx, ny    size of the output array M
+  **
+  ** Output :
+  **  - M         output array
+  */
+
   // Locating the points in space
-  // y for imaginary points
+  // x : real part
+  // y : imaginary part
   // dx is the step of the grid
-  double x, y, x2, y2;
+  double x, y;
   // dx = (x_b[1] - x_b[0]) / nx;
   double inv_dx = (double)nx / (x_b[1] - x_b[0]);
 
@@ -69,8 +81,8 @@ void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
 
   x = x0;
   y = y0;
-  x2 = x * x;
-  y2 = y * y;
+  double x2 = x * x;
+  double y2 = y * y;
   i = (y - y_b[0]) * inv_dx;
   j = (x - x_b[0]) * inv_dx;
   if (i >= 0 && i < (int)ny && j >= 0 && j < (int)nx) {
@@ -92,14 +104,19 @@ void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
 void trajectories(double D, unsigned int maxit, unsigned int minit,
                   double *restrict starting_pts, unsigned int length_strt,
                   double dx) {
-  // This where the trajectories are computed. Tree ranges of escape times are
-  // used for rgb.
-  // M_traj0 store the lowest escape time range of trajectories, and M_traj2
-  // the highest.
+  /* Finds the starting points which are then sent to the master process.
+  ** Tree ranges of escape times are used to generate rgb values.
+  ** Input :
+  **   - D              density
+  **   - maxit, minit   maximum and minimum number of iterations (escape time)
+  **   - starting_pts   points which serves as center of the probability
+  *                     distribution from which the new points are generated.
+  *    - length_strt    number of points in starting_pts
+  *    - dx             grid step
+  */
 
   clock_t t0, t = 0;
 
-  // For parallel processing
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Request req = MPI_REQUEST_NULL;
@@ -134,8 +151,8 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
 
   while (density < 1.0) {
     // generate starting points
-    y0 = starting_pts[(i_hint) % (2 * length_strt)] + gaussrand(0.01);
-    x0 = starting_pts[(i_hint + 1) % (2 * length_strt)] + gaussrand(0.01);
+    y0 = starting_pts[(i_hint) % (2 * length_strt)] + random_normal(0.01);
+    x0 = starting_pts[(i_hint + 1) % (2 * length_strt)] + random_normal(0.01);
 
     it = 0;
     cycle_it = 0;
@@ -242,12 +259,23 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
 }
 
 int border(unsigned int depth, long int length_strt, double *starting_pts) {
-  // Fill starting_pts with a list of random points at the boundary
-  // of the mandelbrot set, if a file already exist, load them, else,
-  // generate the points with the border_start function and write them
-  // to file. The binary file has the structure [y0, x0, y1, x1, y2, ...]
-  // These points are used later as poles when randomly generating starting
-  // points for the trajectories.
+  /*
+  ** Fill starting_pts with a list of random points at the boundary
+  ** of the mandelbrot set, if a file already exist, load them, else,
+  ** generate the points with the border_start function and write them
+  ** to file. The binary file has the structure [y0, x0, y1, x1, y2, ...]
+  ** These points are used later as poles when randomly generating starting
+  ** points for the trajectories.
+  **
+  **  input :
+  **     - depth         number of iterations of the starting points
+  **                     (escape time)
+  **
+  **     - length_strt   number of starting points
+  **
+  ** output :
+  **     - starting_pts  starting points
+  */
 
   // For parallel execution
   int rank; // the rank of the process
@@ -262,7 +290,7 @@ int border(unsigned int depth, long int length_strt, double *starting_pts) {
   // depth can't be bigger than 10^7.
   char depth_str[10];
   if (depth > 10000000 || depth < 11) {
-    printf("\e[1;31mERROR: \e[0;37mdepth cannot be greater than 10000000 or "
+    printf("ERROR: depth cannot be greater than 10000000 or "
            "smaller than 11\n");
     exit(1);
   }
@@ -304,7 +332,7 @@ int border(unsigned int depth, long int length_strt, double *starting_pts) {
           (double *)malloc(length_strt * 2 * (world_size - 1) * sizeof(double));
 
       if (ALL_pts == NULL) {
-        printf("\e[1;31mERROR: \e[0;37mno memory allocated to save starting "
+        printf("ERROR: no memory allocated to save starting "
                "pts \n");
         exit(1);
       }
@@ -345,7 +373,16 @@ int border(unsigned int depth, long int length_strt, double *starting_pts) {
 
 void border_start(unsigned int depth, double *starting_pts,
                   unsigned int length_start) {
-  // Found random points close to the border of the Mdlbrt set
+  /*
+  ** Generate uniformlly distributed points on the complex plane, and returns
+  ** the ones having escape time close to the depth parameter.
+  ** Input :
+  **     - depth           desired number of iteration (escape time)
+  **     - length_start    number of starting points
+  **
+  ** Output :
+  **     - starting_pts    starting points having the right escape times
+  */
   int rank; // the rank of the process
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   double x, y, x0, y0, x2, y2;
@@ -356,8 +393,8 @@ void border_start(unsigned int depth, double *starting_pts,
   while (k < 2 * length_start) {
     it = 0;
 
-    x0 = randomdouble(-2, 0.5);
-    y0 = randomdouble(0, 1.5);
+    x0 = random_uniform(-2, 0.5);
+    y0 = random_uniform(0, 1.5);
 
     x = x0;
     y = y0;
@@ -429,7 +466,7 @@ void save(const char fname[], void *data, unsigned int size,
   FILE *fp = NULL;
   fp = fopen(fname, "wb");
   if (fp == NULL) {
-    printf("\e[1;31mERROR: \e[0;37mopening file %s, cannot save.\n", fname);
+    printf("ERROR: opening file %s, cannot save.\n", fname);
     exit(1);
   }
   fwrite(data, size, n_elements, fp);
@@ -487,8 +524,8 @@ void parse(int argc, char *argv[], Param *param) {
     *(*param).nx = atoi(argv[1]);
   }
   if (strlen((*param).output_dir) > MAX_PATH_LENGTH) {
-    printf("\e[1;31mERROR: \e[0;37 output directory path is more than 490 "
-           "characters.\n");
+    printf("ERROR: output directory path is more than 490 "
+           "characters in length.\n");
     exit(1);
   }
 }
@@ -506,7 +543,7 @@ void export_param(Param param) {
 
   fptr = fopen(filename, "w+");
   if (fptr == NULL) {
-    printf("\e[1;31mERROR: \e[0;37mcannot create param file : %s \n", filename);
+    printf("ERROR: cannot create param file : %s \n", filename);
     exit(1);
   }
   fprintf(fptr,
@@ -521,7 +558,7 @@ void write_progress(double density) {
   FILE *fptr = NULL;
   fptr = fopen("/tmp/progress", "w+");
   if (fptr == NULL) {
-    printf("\e[1;31mERROR: \e[0;37mcannot create progress file \n");
+    printf("ERROR: cannot create progress file \n");
     exit(1);
   }
   if (density > -1.0) {

@@ -17,8 +17,13 @@
 #include <time.h>
 #include <unistd.h>
 
+// Returns a time difference in nano seconds
 double get_time_diff_nano(struct timespec t1, struct timespec t0);
+
 int master(int world_size, Param param, double a[2], double b[2]) {
+  /*
+  ** Handles all of the master process actions.
+  */
 
   printf("Number of cores : %i \n", world_size);
 
@@ -98,9 +103,18 @@ int master(int world_size, Param param, double a[2], double b[2]) {
   return 0;
 }
 
-void recieve_and_draw(uint16_t *R, uint16_t *G, uint16_t *B, double a[2],
-                      double b[2], unsigned int nx, unsigned int ny,
+void recieve_and_draw(uint16_t *R, uint16_t *G, uint16_t *B, double x_b[2],
+                      double y_b[2], unsigned int nx, unsigned int ny,
                       int world_size) {
+  /*
+  ** Fills the RGB values.
+  ** Input :
+  **     - x_b, y_b     boundaries of the domain
+  **     - nx, ny       size of the RGB arrays
+  **     world_size     number of processes
+  ** Output :
+  **     - R, G, B      trajectories
+  */
   clock_t t0, t = 0;
   write_progress(0);
   MPI_Request requ;
@@ -126,16 +140,16 @@ void recieve_and_draw(uint16_t *R, uint16_t *G, uint16_t *B, double a[2],
       for (unsigned int i = 0; i < PTS_MSG_SIZE; ++i) {
         switch (recbuff[i].color) {
         case 'r':
-          draw_trajectories(R, recbuff[i].x, recbuff[i].y, recbuff[i].nit, a, b,
-                            nx, ny);
+          draw_trajectories(R, recbuff[i].x, recbuff[i].y, recbuff[i].nit, x_b,
+                            y_b, nx, ny);
           break;
         case 'g':
-          draw_trajectories(G, recbuff[i].x, recbuff[i].y, recbuff[i].nit, a, b,
-                            nx, ny);
+          draw_trajectories(G, recbuff[i].x, recbuff[i].y, recbuff[i].nit, x_b,
+                            y_b, nx, ny);
           break;
         case 'b':
-          draw_trajectories(B, recbuff[i].x, recbuff[i].y, recbuff[i].nit, a, b,
-                            nx, ny);
+          draw_trajectories(B, recbuff[i].x, recbuff[i].y, recbuff[i].nit, x_b,
+                            y_b, nx, ny);
           break;
         }
       }
@@ -149,9 +163,21 @@ void recieve_and_draw(uint16_t *R, uint16_t *G, uint16_t *B, double a[2],
   printf("\nmaster waiting time : %lf s \n", (double)t / CLOCKS_PER_SEC);
 }
 
-void recieve_and_render(uint16_t *R, uint16_t *G, uint16_t *B, double a[2],
-                        double b[2], unsigned int nx, unsigned int ny,
+void recieve_and_render(uint16_t *R, uint16_t *G, uint16_t *B, double x_b[2],
+                        double y_b[2], unsigned int nx, unsigned int ny,
                         int world_size, unsigned int cycles_per_update) {
+  /*
+  ** Recieves points computed by the slave processes and render them.
+  ** input :
+  **    - x_b, y_b           boundary of the domain
+  **    - nx, ny             size of the R, G, B arrays
+  **    - world_size         number of processes
+  **    - cycles_per_update  number of recieves/store cycles to perform
+  **                         between each rendering frame.
+  **
+  ** output :
+  **    - R, G, B             arrays storing the points trajectories.
+  */
 
   unsigned int redu_fact = 1;
   uint16_t *R_reduced = NULL, *G_reduced = NULL, *B_reduced = NULL;
@@ -209,8 +235,8 @@ void recieve_and_render(uint16_t *R, uint16_t *G, uint16_t *B, double a[2],
       .n_it = cycles_per_update,
       .requ = &requ,
       .recbuff = recbuff,
-      .a = a,
-      .b = b,
+      .x_b = x_b,
+      .y_b = y_b,
       .Rmax = &rdr_obj.Rmax,
       .Gmax = &rdr_obj.Gmax,
       .Bmax = &rdr_obj.Bmax,
@@ -221,7 +247,7 @@ void recieve_and_render(uint16_t *R, uint16_t *G, uint16_t *B, double a[2],
   };
   if (redu_fact > 1) {
     // define the lower left corner of the zoomed rendered region;
-    define_zoom(a, b, &args.i_ll_redu, &args.j_ll_redu, args.nx_redu,
+    define_zoom(x_b, y_b, &args.i_ll_redu, &args.j_ll_redu, args.nx_redu,
                 args.ny_redu, nx, ny);
   }
 
@@ -240,9 +266,21 @@ void recieve_and_render(uint16_t *R, uint16_t *G, uint16_t *B, double a[2],
 void downsample(uint16_t *in, uint16_t *out, unsigned int in_nx,
                 unsigned int in_ny, unsigned int redu_fact);
 void max16(uint16_t *X, size_t n, uint16_t *max);
-int callback(uint16_t *R_reduced, uint16_t *G_reduced, uint16_t *B_reduced,
-             void *fargs) {
 
+int callback(uint16_t *R_subdomain, uint16_t *G_subdomain,
+             uint16_t *B_subdomain, void *fargs) {
+  /*
+  ** Callback function for the live plot.
+  ** This function recieves the starting points computed by the slave process.
+  ** Then the trajectories are drawn and, if needed a zoomed in version is used
+  ** to fill the subdomain arrays, which will be used by the live render.
+  **
+  ** input :
+  **     - R_, G_, B_subdomain  region of the trajectory arrays to be plotted
+  **     - fargs                other arguments
+  */
+
+  // equals the number of complete slaves processes
   static int completion_flag = 0;
 
   Fargs *args = (Fargs *)fargs;
@@ -258,16 +296,16 @@ int callback(uint16_t *R_reduced, uint16_t *G_reduced, uint16_t *B_reduced,
       for (unsigned int i = 0; i < PTS_MSG_SIZE; ++i) {
         switch (rec[i].color) {
         case 'r':
-          draw_trajectories(R, rec[i].x, rec[i].y, rec[i].nit, args->a, args->b,
-                            args->nx, args->ny);
+          draw_trajectories(R, rec[i].x, rec[i].y, rec[i].nit, args->x_b,
+                            args->y_b, args->nx, args->ny);
           break;
         case 'g':
-          draw_trajectories(G, rec[i].x, rec[i].y, rec[i].nit, args->a, args->b,
-                            args->nx, args->ny);
+          draw_trajectories(G, rec[i].x, rec[i].y, rec[i].nit, args->x_b,
+                            args->y_b, args->nx, args->ny);
           break;
         case 'b':
-          draw_trajectories(B, rec[i].x, rec[i].y, rec[i].nit, args->a, args->b,
-                            args->nx, args->ny);
+          draw_trajectories(B, rec[i].x, rec[i].y, rec[i].nit, args->x_b,
+                            args->y_b, args->nx, args->ny);
           break;
         }
       }
@@ -278,33 +316,27 @@ int callback(uint16_t *R_reduced, uint16_t *G_reduced, uint16_t *B_reduced,
   }
 
   if (args->redu_fact > 1) {
-    /* downsample(R, R_reduced, args->nx, args->ny, args->redu_fact); */
-    /* downsample(G, G_reduced, args->nx, args->ny, args->redu_fact); */
-    /* downsample(B, B_reduced, args->nx, args->ny, args->redu_fact); */
-    zoom(R, R_reduced, args->i_ll_redu, args->j_ll_redu, args->nx_redu,
+    /* downsample(R, R_subdomain, args->nx, args->ny, args->redu_fact); */
+    /* downsample(G, G_subdomain, args->nx, args->ny, args->redu_fact); */
+    /* downsample(B, B_subdomain, args->nx, args->ny, args->redu_fact); */
+    zoom(R, R_subdomain, args->i_ll_redu, args->j_ll_redu, args->nx_redu,
          args->ny_redu, args->nx);
-    zoom(G, G_reduced, args->i_ll_redu, args->j_ll_redu, args->nx_redu,
+    zoom(G, G_subdomain, args->i_ll_redu, args->j_ll_redu, args->nx_redu,
          args->ny_redu, args->nx);
-    zoom(B, B_reduced, args->i_ll_redu, args->j_ll_redu, args->nx_redu,
+    zoom(B, B_subdomain, args->i_ll_redu, args->j_ll_redu, args->nx_redu,
          args->ny_redu, args->nx);
   }
-  max16(R_reduced, args->nx_redu * args->ny_redu, args->Rmax);
-  max16(G_reduced, args->nx_redu * args->ny_redu, args->Gmax);
-  max16(B_reduced, args->nx_redu * args->ny_redu, args->Bmax);
+  max16(R_subdomain, args->nx_redu * args->ny_redu, args->Rmax);
+  max16(G_subdomain, args->nx_redu * args->ny_redu, args->Gmax);
+  max16(B_subdomain, args->nx_redu * args->ny_redu, args->Bmax);
   return (completion_flag != (args->world_size - 1));
-}
-
-void max16(uint16_t *X, size_t n, uint16_t *max) {
-  *max = 0;
-  for (size_t i = 0; i < n; ++i) {
-    if (X[i] > *max) {
-      *max = X[i];
-    }
-  }
 }
 
 void downsample(uint16_t *in, uint16_t *out, unsigned int in_nx,
                 unsigned int in_ny, unsigned int redu_fact) {
+  /*
+  ** Fills the output array with a downsampled version of the input array.
+  */
 
   unsigned int out_nx = in_nx / redu_fact, out_ny = in_ny / redu_fact,
                area = redu_fact * redu_fact;
@@ -329,6 +361,17 @@ void downsample(uint16_t *in, uint16_t *out, unsigned int in_nx,
 
 void zoom(uint16_t *in, uint16_t *out, unsigned int i_ll, unsigned int j_ll,
           unsigned int out_nx, unsigned int out_ny, unsigned int in_nx) {
+  /*
+  ** Extract a subregion defined by a bounding box in the input array
+  ** Input :
+  **     - in              input array
+  **     - in_nx           size of the input array
+  **     - i_ll, j_ll      bounding box low left corner
+  **     - out_nx, out_ny  size of the output array
+  **
+  ** Output :
+  **     - out         zoomed in region
+  */
 
   for (unsigned int i = 0; i < out_ny; ++i) {
     for (unsigned int j = 0; j < out_nx; ++j) {
@@ -338,22 +381,36 @@ void zoom(uint16_t *in, uint16_t *out, unsigned int i_ll, unsigned int j_ll,
 }
 
 void define_zoom(double x_b[2], double y_b[2], unsigned int *i_ll,
-                 unsigned int *j_ll, unsigned int nx_redu, unsigned int ny_redu,
+                 unsigned int *j_ll, unsigned int nx_zoom, unsigned int ny_zoom,
                  unsigned int nx, unsigned int ny) {
+  /*
+  ** Returns a bounding box aroud the zoom center defined by the define macros
+  ** ZOOM_CENTER_X (resp _Y).
+  **
+  ** Input :
+  **     - x_b, y_b          boundaries of the domain
+  **     - nx_zoom, ny_zoom  size of the zoom region
+  **     - nx, ny            size of the whole domain
+  **
+  ** Return :
+  **     - i_ll, j_ll        bounding box low left corner postion
+  **
+  */
 
   double dx = (x_b[1] - x_b[0]) / nx, x0 = ZOOM_CENTER_X, y0 = ZOOM_CENTER_Y;
-  double x_ll = (x0 - dx * nx_redu / 2.0);
-  double y_ll = (y0 - dx * ny_redu / 2.0);
-  double x_tr = (x0 + dx * nx_redu / 2.0);
-  double y_tr = (y0 + dx * ny_redu / 2.0);
+  double x_ll = (x0 - dx * nx_zoom / 2.0);
+  double y_ll = (y0 - dx * ny_zoom / 2.0);
+  double x_tr = (x0 + dx * nx_zoom / 2.0);
+  double y_tr = (y0 + dx * ny_zoom / 2.0);
 
+  // Ensure that the bounding box is included in the domain.
   if (y_ll > y_b[0]) {
     *i_ll = (y_ll - y_b[0]) / dx;
   } else {
     *i_ll = 0;
   }
   if (y_tr >= y_b[1] - dx) {
-    *i_ll = ny - ny_redu;
+    *i_ll = ny - ny_zoom;
   }
 
   if (x_ll > x_b[0]) {
@@ -362,10 +419,20 @@ void define_zoom(double x_b[2], double y_b[2], unsigned int *i_ll,
     *j_ll = 0;
   }
   if (x_tr >= x_b[1]) {
-    *j_ll = nx - nx_redu;
+    *j_ll = nx - nx_zoom;
   }
 }
 
 double get_time_diff_nano(struct timespec t1, struct timespec t0) {
+  // Return time difference in nano seconds.
   return (1000000000 * (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec));
+}
+
+void max16(uint16_t *X, size_t n, uint16_t *max) {
+  *max = 0;
+  for (size_t i = 0; i < n; ++i) {
+    if (X[i] > *max) {
+      *max = X[i];
+    }
+  }
 }
