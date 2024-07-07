@@ -57,7 +57,7 @@ void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
                        double *x_b, double *y_b, unsigned int nx,
                        unsigned int ny) {
   /*
-  ** Fill the input array with the trajectory of the provided starting point.
+  ** Fills the input array with the trajectory of the provided starting point.
   ** Input :
   **  - x0, y0    starting points
   **  - nit       number of iterations to perform
@@ -260,7 +260,7 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
 
 int border(unsigned int depth, long int length_strt, double *starting_pts) {
   /*
-  ** Fill starting_pts with a list of random points at the boundary
+  ** Fills starting_pts with a list of random points at the boundary
   ** of the mandelbrot set, if a file already exist, load them, else,
   ** generate the points with the border_start function and write them
   ** to file. The binary file has the structure [y0, x0, y1, x1, y2, ...]

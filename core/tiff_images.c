@@ -1,5 +1,5 @@
 /*
-** This file defines the image output functions.
+** Image output functions.
 */
 #include "tiff_images.h"
 #include <stdint.h>

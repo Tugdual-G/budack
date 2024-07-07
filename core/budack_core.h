@@ -34,14 +34,62 @@ typedef struct {
 void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
                        double *x_b, double *y_b, unsigned int nx,
                        unsigned int ny);
+/*
+** Fills the input array with the trajectory of the provided starting point.
+** Input :
+**  - x0, y0    starting points
+**  - nit       number of iterations to perform
+**  - x_b, y_b  boundaries of the domain
+**  - nx, ny    size of the output array M
+**
+** Output :
+**  - M         output array
+*/
 
 void trajectories(double D, unsigned int maxit, unsigned int minit,
                   double *starting_pts, unsigned int length_strt, double dx);
+/* Finds the starting points which are then sent to the master process.
+** Tree ranges of escape times are used to generate rgb values.
+** Input :
+**   - D              density
+**   - maxit, minit   maximum and minimum number of iterations (escape time)
+**   - starting_pts   points which serves as center of the probability
+*                     distribution from which the new points are generated.
+*    - length_strt    number of points in starting_pts
+*    - dx             grid step
+*/
 
 int border(unsigned int depth, long int length_strt, double *starting_pts);
+/*
+** Fills starting_pts with a list of random points at the boundary
+** of the mandelbrot set, if a file already exist, load them, else,
+** generate the points with the border_start function and write them
+** to file. The binary file has the structure [y0, x0, y1, x1, y2, ...]
+** These points are used later as poles when randomly generating starting
+** points for the trajectories.
+**
+**  input :
+**     - depth         number of iterations of the starting points
+**                     (escape time)
+**
+**     - length_strt   number of starting points
+**
+** output :
+**     - starting_pts  starting points
+*/
 
 void border_start(unsigned int depth, double *starting_pts,
                   unsigned int length_start);
+/*
+** Generate uniformlly distributed points on the complex plane, and returns
+** the ones having escape time close to the depth parameter.
+** Input :
+**     - depth           desired number of iteration (escape time)
+**     - length_start    number of starting points
+**
+** Output :
+**     - starting_pts    starting points having the right escape times
+*/
 
 void save(const char fname[], void *data, unsigned int size,
           unsigned int n_elements);
