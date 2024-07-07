@@ -1,4 +1,10 @@
-// #include "slave.h"
+/*
+** This file define the slaves processes actions.
+** Slaves processes finds starting points with good trajectory
+** property (long, divergent ...).
+** Then the points are sent to the master process.
+*/
+#include "slave.h"
 #include "budack_core.h"
 #include "tiff_images.h"
 #include <math.h>

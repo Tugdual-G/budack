@@ -1,3 +1,7 @@
+/*
+** The master process gathers starting points to iterate and
+** plots the current state of the computation.
+*/
 #include "master.h"
 #include "budack_core.h"
 #include "opengl/render.h"

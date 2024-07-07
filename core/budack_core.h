@@ -1,4 +1,7 @@
-/* budack_core.h */
+/*
+** This file declare all the lower level core functions.
+** These functions are used by the master and the slave processes.
+*/
 #ifndef BUDACK_CORE_H_
 #define BUDACK_CORE_H_
 

@@ -1,3 +1,7 @@
+/*
+** The master process gathers starting points to iterate and
+** plots the current state of the computation.
+*/
 #ifndef MASTER_H_
 #define MASTER_H_
 #include "budack_core.h"

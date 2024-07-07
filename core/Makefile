@@ -10,7 +10,7 @@ LDLIBS = -L. -lslave -lmaster
 # Targets
 all: budack
 
-budack: main_master_slaves.c libslave.so libmaster.so
+budack: main.c libslave.so libmaster.so
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS) $(LDFLAGS_main)
 
 libslave.so: slave.c budack_core.c

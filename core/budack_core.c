@@ -1,3 +1,7 @@
+/*
+** This file defines all the lower level core functions.
+** These functions are used by the master and the slave processes.
+*/
 #include "budack_core.h"
 #include <math.h>
 #include <mpi.h>
@@ -12,6 +16,7 @@
 #define PI 3.141592654
 
 double min3_double(double x, double y, double z) {
+  // minimum value between 3 numbers
   double min = x < y ? x : y;
   min = min < z ? min : z;
   return min;

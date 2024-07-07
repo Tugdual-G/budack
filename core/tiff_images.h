@@ -1,3 +1,6 @@
+/*
+** This file declare the image output functions.
+*/
 #ifndef TIFF_IMAGES_H_
 #define TIFF_IMAGES_H_
 
