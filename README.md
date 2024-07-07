@@ -1,8 +1,6 @@
 # budack
  **Real time parallel rendering of the Mandelbrot set gost-points.**
 
-([click to explore the details](https://raw.githubusercontent.com/Tugdual-G/budack/main/images_exemples/trajhd.png))
-
 ![alt text](images_examples/zoom1.png)
 
 ## Presentation
@@ -60,10 +58,14 @@ The script exe.sh add more details to the function of each parameter in comments
 ## Computing scheme
 
 - Generate random points close to the border of the Mandelbrot set.
-    - These points are computed randomly with a normal distribution around the border of the Mandelbrot set and stored on disk for reuse.
-    The positions of the first points attract the probability distribution of the next points toward them. 
+  These points are computed randomly around the border of the Mandelbrot set and stored on disk for reuse.
+  The positions of the first points attract the probability distribution of the next points toward them. 
 - Slightly offset these starting points randomly by a binomial distribution.
 - Compute the trajectories until sufficient density (points per pixel) is reached.
+- On the main branch, the slave processes only send the starting points to the 
+  master process. This is faster for large definition images, and the master can
+  iterate without any branch in its code.
+
 - An output .tiff image is created. The parameters are written to disk too as 'param.txt'. 
 
 **Note**   
