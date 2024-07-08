@@ -6,42 +6,50 @@
 #include "budack_core.h"
 #include "opengl/render.h"
 #include "tiff_images.h"
-#include <math.h>
+// #include <math.h>
 #include <mpi.h>
-#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+// #include <sys/stat.h>
+// #include <sys/types.h>
+#include <stdint.h>
 #include <time.h>
-#include <unistd.h>
+// #include <unistd.h>
+#include <time.h>
 
-// Returns a time difference in nano seconds
-double get_time_diff_nano(struct timespec t1, struct timespec t0);
+#define KiB_SIZE 1024.0
 
-int master(int world_size, Param param, double a[2], double b[2]) {
+// Returns a time difference in seconds
+double get_time_diff_seconds(struct timespec t1, struct timespec t0);
+
+int master(int world_size, Param param, double x_b[2], double y_b[2]) {
   /*
   ** Handles all of the master process actions.
   */
 
   printf("Number of cores : %i \n", world_size);
 
-  double max_memory;
+  // grid size
+  unsigned int nx = *param.nx, ny = *param.ny;
 
-  unsigned int nx = *param.nx, ny = *param.ny, depth = *param.depth,
-               maxit = *param.maxit, minit = *param.minit;
-  double D = *param.D;
-  // in bytes
-  max_memory = 3 * nx * ny * (sizeof(uint16_t) + sizeof(uint16_t)) +
-               LENGTH_STRT * sizeof(double);
+  // escape time of the starting points
+  unsigned int depth = *param.depth;
+
+  // iteration range
+  unsigned int maxit = *param.maxit, minit = *param.minit;
+
+  // memory usage estimation in bytes
+  double max_memory = 3.0 * nx * ny * (sizeof(uint16_t) + sizeof(uint16_t)) +
+                      LENGTH_STRT * sizeof(double);
+
   // In GiB
-  max_memory /= (double)1024 * 1024;
+  max_memory /= KiB_SIZE * KiB_SIZE;
   printf("Max memory usage :\x1b[32m %.0f MiB \x1b[0m\n", max_memory);
 
   printf("nx = %d ; ny = %d ; depth = %u \n", nx, ny, depth);
   printf("maxit = %d ; minit = %d ; Points per pixels %.2f \n", maxit, minit,
-         D);
+         *param.density);
   export_param(param);
 
   ////////////////////////////////////////////////
@@ -63,21 +71,21 @@ int master(int world_size, Param param, double a[2], double b[2]) {
   R_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
   G_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
   B_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
-  if (!B_16 | !R_16 | !G_16) {
+  if (!B_16 || !R_16 || !G_16) {
     printf("\n Error, no memory allocated for trajectories sum \n");
     exit(1);
   }
   if (param.cycles_per_update != 0) {
-    recieve_and_render(R_16, G_16, B_16, a, b, nx, ny, world_size,
+    recieve_and_render(R_16, G_16, B_16, x_b, y_b, nx, ny, world_size,
                        param.cycles_per_update);
   } else {
-    recieve_and_draw(R_16, G_16, B_16, a, b, nx, ny, world_size);
+    recieve_and_draw(R_16, G_16, B_16, x_b, y_b, nx, ny, world_size);
   }
 
   MPI_Barrier(MPI_COMM_WORLD);
   clock_gettime(CLOCK_REALTIME, &time_1);
   printf("\nTime elapsed computing trajectories %lf s \n",
-         get_time_diff_nano(time_1, time_0) / 1E9);
+         get_time_diff_seconds(time_1, time_0) / 1e9);
 
   mirror_traj(ny, nx, R_16);
   mirror_traj(ny, nx, G_16);
@@ -151,6 +159,8 @@ void recieve_and_draw(uint16_t *R, uint16_t *G, uint16_t *B, double x_b[2],
           draw_trajectories(B, recbuff[i].x, recbuff[i].y, recbuff[i].nit, x_b,
                             y_b, nx, ny);
           break;
+        default:
+          break;
         }
       }
 
@@ -179,27 +189,29 @@ void recieve_and_render(uint16_t *R, uint16_t *G, uint16_t *B, double x_b[2],
   **    - R, G, B             arrays storing the points trajectories.
   */
 
+  // Reduction factor in case the zoomed in display is used
   unsigned int redu_fact = 1;
-  uint16_t *R_reduced = NULL, *G_reduced = NULL, *B_reduced = NULL;
+
+  // subdomain of the trajectory to be plotted
+  uint16_t *R_zoom = NULL, *G_zoom = NULL, *B_zoom = NULL;
   if (nx > MAX_RENDER_SIZE * 2 - 1) {
     redu_fact = nx / MAX_RENDER_SIZE;
-    R_reduced =
+    R_zoom =
         (uint16_t *)calloc(nx / redu_fact * ny / redu_fact, sizeof(uint16_t));
-    G_reduced =
+    G_zoom =
         (uint16_t *)calloc(nx / redu_fact * ny / redu_fact, sizeof(uint16_t));
-    B_reduced =
+    B_zoom =
         (uint16_t *)calloc(nx / redu_fact * ny / redu_fact, sizeof(uint16_t));
-    if (!B_reduced | !R_reduced | !G_reduced) {
+    if (!B_zoom | !R_zoom | !G_zoom) {
       printf("\n Error, no memory allocated for reduced RGB sum \n");
       exit(1);
     }
   } else {
-    R_reduced = R;
-    G_reduced = G;
-    B_reduced = B;
+    R_zoom = R;
+    G_zoom = G;
+    B_zoom = B;
   }
 
-  /* clock_t t0, t = 0; */
   write_progress(0);
   MPI_Request requ;
   pts_msg *recbuff = (pts_msg *)malloc(sizeof(pts_msg) * PTS_MSG_SIZE);
@@ -221,9 +233,9 @@ void recieve_and_render(uint16_t *R, uint16_t *G, uint16_t *B, double x_b[2],
       .Rmax = MAX_UINT16,
       .Gmax = MAX_UINT16,
       .Bmax = MAX_UINT16,
-      .R = R_reduced,
-      .G = G_reduced,
-      .B = B_reduced,
+      .R = R_zoom,
+      .G = G_zoom,
+      .B = B_zoom,
   };
 
   Fargs args = {
@@ -263,9 +275,7 @@ void recieve_and_render(uint16_t *R, uint16_t *G, uint16_t *B, double x_b[2],
          *args.Bmax);
 }
 
-void downsample(uint16_t *in, uint16_t *out, unsigned int in_nx,
-                unsigned int in_ny, unsigned int redu_fact);
-void max16(uint16_t *X, size_t n, uint16_t *max);
+void max16(const uint16_t *X, size_t n, uint16_t *max);
 
 int callback(uint16_t *R_subdomain, uint16_t *G_subdomain,
              uint16_t *B_subdomain, void *fargs) {
@@ -332,14 +342,16 @@ int callback(uint16_t *R_subdomain, uint16_t *G_subdomain,
   return (completion_flag != (args->world_size - 1));
 }
 
-void downsample(uint16_t *in, uint16_t *out, unsigned int in_nx,
+void downsample(const uint16_t *in, uint16_t *out, unsigned int in_nx,
                 unsigned int in_ny, unsigned int redu_fact) {
   /*
   ** Fills the output array with a downsampled version of the input array.
   */
 
-  unsigned int out_nx = in_nx / redu_fact, out_ny = in_ny / redu_fact,
-               area = redu_fact * redu_fact;
+  unsigned int out_nx = in_nx / redu_fact;
+  unsigned int out_ny = in_ny / redu_fact;
+  unsigned int stencil_size = redu_fact * redu_fact;
+
   for (unsigned int i_out = 0; i_out < out_ny; ++i_out) {
     for (unsigned int j_out = 0; j_out < out_nx; ++j_out) {
       out[i_out * out_nx + j_out] = 0;
@@ -354,13 +366,14 @@ void downsample(uint16_t *in, uint16_t *out, unsigned int in_nx,
       }
     }
     for (unsigned int j_out = 0; j_out < out_nx; ++j_out) {
-      out[i_out * out_nx + j_out] /= area;
+      out[i_out * out_nx + j_out] /= stencil_size;
     }
   }
 }
 
-void zoom(uint16_t *in, uint16_t *out, unsigned int i_ll, unsigned int j_ll,
-          unsigned int out_nx, unsigned int out_ny, unsigned int in_nx) {
+void zoom(const uint16_t *in, uint16_t *out, unsigned int i_ll,
+          unsigned int j_ll, unsigned int out_nx, unsigned int out_ny,
+          unsigned int in_nx) {
   /*
   ** Extract a subregion defined by a bounding box in the input array
   ** Input :
@@ -380,7 +393,7 @@ void zoom(uint16_t *in, uint16_t *out, unsigned int i_ll, unsigned int j_ll,
   }
 }
 
-void define_zoom(double x_b[2], double y_b[2], unsigned int *i_ll,
+void define_zoom(const double x_b[2], const double y_b[2], unsigned int *i_ll,
                  unsigned int *j_ll, unsigned int nx_zoom, unsigned int ny_zoom,
                  unsigned int nx, unsigned int ny) {
   /*
@@ -397,7 +410,8 @@ void define_zoom(double x_b[2], double y_b[2], unsigned int *i_ll,
   **
   */
 
-  double dx = (x_b[1] - x_b[0]) / nx, x0 = ZOOM_CENTER_X, y0 = ZOOM_CENTER_Y;
+  double dx = (x_b[1] - x_b[0]) / nx;
+  double x0 = ZOOM_CENTER_X, y0 = ZOOM_CENTER_Y;
   double x_ll = (x0 - dx * nx_zoom / 2.0);
   double y_ll = (y0 - dx * ny_zoom / 2.0);
   double x_tr = (x0 + dx * nx_zoom / 2.0);
@@ -423,12 +437,12 @@ void define_zoom(double x_b[2], double y_b[2], unsigned int *i_ll,
   }
 }
 
-double get_time_diff_nano(struct timespec t1, struct timespec t0) {
-  // Return time difference in nano seconds.
-  return (1000000000 * (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec));
+double get_time_diff_seconds(struct timespec t1, struct timespec t0) {
+  // Return time difference in seconds.
+  return (1e9 * (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec));
 }
 
-void max16(uint16_t *X, size_t n, uint16_t *max) {
+void max16(const uint16_t *X, size_t n, uint16_t *max) {
   *max = 0;
   for (size_t i = 0; i < n; ++i) {
     if (X[i] > *max) {

@@ -491,6 +491,7 @@ void mirror_traj(unsigned int ny, unsigned int nx, uint16_t *B) {
 }
 
 void parse(int argc, char *argv[], Param *param) {
+  /* Extremlly basic parser */
   switch (argc) {
 
   case 8:
@@ -507,7 +508,7 @@ void parse(int argc, char *argv[], Param *param) {
     __attribute__((fallthrough));
 
   case 5:
-    *(*param).D = (double)atoi(argv[4]);
+    *(*param).density = (double)atoi(argv[4]);
 
     __attribute__((fallthrough));
 
@@ -549,7 +550,7 @@ void export_param(Param param) {
   fprintf(fptr,
           "nx=%u \nny=%u \nmaxit=%u \nminit=%u \nPoints per pixels=%.4f "
           "\ndepth=%u \n",
-          *param.nx, *param.ny, *param.maxit, *param.minit, *param.D,
+          *param.nx, *param.ny, *param.maxit, *param.minit, *param.density,
           *param.depth);
   fclose(fptr);
 }

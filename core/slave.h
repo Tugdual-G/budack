@@ -8,5 +8,5 @@
 #include "budack_core.h"
 
 // All of the slaves process actions will be called from this function
-int slave(int world_size, int rank, Param param, double a[2]);
+int slave(int world_size, int rank, Param param, const double x_b[2]);
 #endif // SLAVE_H_

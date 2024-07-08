@@ -7,9 +7,13 @@
 
 #include <stdint.h>
 
-#define PTS_MSG_SIZE 20
-#define LENGTH_STRT 50000
-#define MAX_PATH_LENGTH 490
+#define DOMAIN_BOUND_XM -2.3
+#define DOMAIN_BOUND_XP 1.3
+#define DOMAIN_BOUND_YP 1.5
+
+#define PTS_MSG_SIZE 20     // number of points sent in each message
+#define LENGTH_STRT 50000   // number of hints/poles to generate
+#define MAX_PATH_LENGTH 490 // maximum length of the output path string
 #define PARAM_FNAME "param.txt"
 #define HINTS_FNAME "hintsfiles/hints"
 
@@ -26,7 +30,7 @@ typedef struct {
 
 typedef struct {
   unsigned int *nx, *ny, *maxit, *minit, *depth;
-  double *D;
+  double *density;
   char *output_dir;
   unsigned int cycles_per_update;
 } Param;
@@ -46,7 +50,7 @@ void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
 **  - M         output array
 */
 
-void trajectories(double D, unsigned int maxit, unsigned int minit,
+void trajectories(double density, unsigned int maxit, unsigned int minit,
                   double *starting_pts, unsigned int length_strt, double dx);
 /* Finds the starting points which are then sent to the master process.
 ** Tree ranges of escape times are used to generate rgb values.

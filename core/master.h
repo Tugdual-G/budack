@@ -23,13 +23,13 @@ typedef struct {
   uint16_t *R, *G, *B;
 } Fargs;
 
-int master(int world_size, Param param, double a[2], double b[2]);
+int master(int world_size, Param param, double x_b[2], double y_b[2]);
 /*
 ** Handles all of the master process actions.
 */
 
-void recieve_and_render(uint16_t *R, uint16_t *G, uint16_t *B, double a[2],
-                        double b[2], unsigned int nx, unsigned int ny,
+void recieve_and_render(uint16_t *R, uint16_t *G, uint16_t *B, double x_b[2],
+                        double y_b[2], unsigned int nx, unsigned int ny,
                         int world_size, unsigned int cycles_per_update);
 /*
 ** Recieves points computed by the slave processes and render them.
@@ -44,8 +44,8 @@ void recieve_and_render(uint16_t *R, uint16_t *G, uint16_t *B, double a[2],
 **    - R, G, B             arrays storing the points trajectories.
 */
 
-void recieve_and_draw(uint16_t *R, uint16_t *G, uint16_t *B, double a[2],
-                      double b[2], unsigned int nx, unsigned int ny,
+void recieve_and_draw(uint16_t *R, uint16_t *G, uint16_t *B, double x_b[2],
+                      double y_b[2], unsigned int nx, unsigned int ny,
                       int world_size);
 /*
 ** Fills the RGB values.
@@ -69,14 +69,14 @@ int callback(uint16_t *R, uint16_t *G, uint16_t *B, void *fargs);
 **     - fargs                other arguments
 */
 
-void down_sample(uint16_t *in, uint16_t *out, unsigned int in_nx,
+void down_sample(const uint16_t *in, uint16_t *out, unsigned int in_nx,
                  unsigned int in_ny, unsigned int redu_fact);
 /*
 ** Fills the output array with a downsampled version of the input array.
 */
 
-void define_zoom(double x_b[2], double y_b[2], unsigned int *i_ll,
-                 unsigned int *j_ll, unsigned int nx_redu, unsigned int ny_redu,
+void define_zoom(const double x_b[2], const double y_b[2], unsigned int *i_ll,
+                 unsigned int *j_ll, unsigned int nx_zoom, unsigned int ny_zoom,
                  unsigned int nx, unsigned int ny);
 /*
 ** Returns a bounding box aroud the zoom center defined by the define macros
@@ -92,8 +92,9 @@ void define_zoom(double x_b[2], double y_b[2], unsigned int *i_ll,
 **
 */
 
-void zoom(uint16_t *in, uint16_t *out, unsigned int i_ll, unsigned int j_ll,
-          unsigned int out_nx, unsigned int out_ny, unsigned int in_nx);
+void zoom(const uint16_t *in, uint16_t *out, unsigned int i_ll,
+          unsigned int j_ll, unsigned int out_nx, unsigned int out_ny,
+          unsigned int in_nx);
 /*
 ** Extract a subregion defined by a bounding box in the input array
 ** Input :

@@ -6,29 +6,33 @@
 */
 #include "slave.h"
 #include "budack_core.h"
-#include "tiff_images.h"
-#include <math.h>
-#include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <time.h>
-#include <unistd.h>
 
-int slave(int world_size, int rank, Param param, double a[2]) {
+int slave(int world_size, int rank, Param param, const double x_b[2]) {
+  /*
+  ** Handle the slave processes.
+  ** Input :
+  **    - world_size   number of mpi processes
+  **    - rank         process rank
+  **    - param        parameters
+  **    - x_b          real part boundaries of the complex domain
+  */
 
-  unsigned int nx = *param.nx, depth = *param.depth, maxit = *param.maxit,
-               minit = *param.minit;
-  double D = *param.D;
+  // grid size
+  unsigned int nx = *param.nx;
+  // escape time of the poles/hints
+  unsigned int depth = *param.depth;
+  // iteration range
+  unsigned int maxit = *param.maxit, minit = *param.minit;
+  // grid step
+  double dx = (x_b[1] - x_b[0]) / nx;
 
-  double dx = (a[1] - a[0]) / nx;
   ////////////////////////////////////////////////
   //   Searching for points on the boundary
   ////////////////////////////////////////////////
-
-  // There is no need to parallelise this part
 
   double *starting_pts = NULL;
   unsigned int length_brdr = LENGTH_STRT / (world_size - 1);
@@ -43,11 +47,11 @@ int slave(int world_size, int rank, Param param, double a[2]) {
   border(depth, length_brdr, starting_pts);
 
   ////////////////////////////////////////////////
-  //   Cumputing the trajectories
+  //   Computing the trajectories
   ////////////////////////////////////////////////
 
-  trajectories(D / (double)world_size, maxit, minit, starting_pts, length_brdr,
-               dx);
+  trajectories(*param.density / (double)world_size, maxit, minit, starting_pts,
+               length_brdr, dx);
   free(starting_pts);
 
   return 0;
