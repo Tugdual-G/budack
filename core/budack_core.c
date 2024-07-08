@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #define PI 3.141592654
+#define SIGMA 0.01
 
 double min3_double(double x, double y, double z) {
   // Returns the minimum value between 3 numbers
@@ -29,20 +30,20 @@ double min3_double(double x, double y, double z) {
 
 double random_normal(double sigma) {
   // Returns normally distributed random double.
-  static double U, V;
+  static double u, v;
   static int phase = 0;
-  double Z;
+  double z;
 
   if (phase == 0) {
-    U = (rand() + 1.) / (RAND_MAX + 2.);
-    V = rand() / (RAND_MAX + 1.);
-    Z = sqrt(-2 * log(U)) * sin(2 * PI * V);
+    u = (rand() + 1.) / (RAND_MAX + 2.);
+    v = rand() / (RAND_MAX + 1.);
+    z = sqrt(-2 * log(u)) * sin(2 * PI * v);
   } else
-    Z = sqrt(-2 * log(U)) * cos(2 * PI * V);
+    z = sqrt(-2 * log(u)) * cos(2 * PI * v);
 
   phase = 1 - phase;
 
-  return Z * sigma;
+  return z * sigma;
 }
 
 double random_uniform(double min, double max) {
@@ -54,7 +55,7 @@ double random_uniform(double min, double max) {
 }
 
 void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
-                       double *x_b, double *y_b, unsigned int nx,
+                       const double *x_b, const double *y_b, unsigned int nx,
                        unsigned int ny) {
   /*
   ** Fills the input array with the trajectory of the provided starting point.
@@ -86,7 +87,7 @@ void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
   i = (y - y_b[0]) * inv_dx;
   j = (x - x_b[0]) * inv_dx;
   if (i >= 0 && i < (int)ny && j >= 0 && j < (int)nx) {
-    ++*(M + nx * i + j);
+    ++M[(size_t)nx * i + j];
   }
   for (unsigned int k = 0; k < nit; ++k) {
     y = 2 * x * y + y0;
@@ -96,13 +97,13 @@ void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
     i = (y - y_b[0]) * inv_dx;
     j = (x - x_b[0]) * inv_dx;
     if (i >= 0 && i < (int)ny && j >= 0 && j < (int)nx) {
-      ++*(M + nx * i + j);
+      ++M[(size_t)nx * i + j];
     }
   }
 }
 
 void trajectories(double D, unsigned int maxit, unsigned int minit,
-                  double *restrict starting_pts, unsigned int length_strt,
+                  const double *starting_pts, unsigned int length_strt,
                   double dx) {
   /* Finds the starting points which are then sent to the master process.
   ** Tree ranges of escape times are used to generate rgb values.
@@ -144,15 +145,17 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
   double density = 0.0, density_factor = dx * dx / (AREA * D);
   write_progress(density);
   // Definition of the 3 ranges of escape time,
-  unsigned int maxit0 = minit + (maxit - minit) / 3.0,
-               maxit1 = minit + 2 * (maxit - minit) / 3.0;
+  unsigned int maxit0 = minit + (maxit - minit) / 3.0;
+  unsigned int maxit1 = minit + 2 * (maxit - minit) / 3.0;
 
   double density_maxit = 0, density_minit = 0, density_medit = 0;
 
   while (density < 1.0) {
     // generate starting points
-    y0 = starting_pts[(i_hint) % (2 * length_strt)] + random_normal(0.01);
-    x0 = starting_pts[(i_hint + 1) % (2 * length_strt)] + random_normal(0.01);
+    y0 = starting_pts[(i_hint) % ((size_t)2 * length_strt)] +
+         random_normal(SIGMA);
+    x0 = starting_pts[(i_hint + 1) % ((size_t)2 * length_strt)] +
+         random_normal(SIGMA);
 
     it = 0;
     cycle_it = 0;
@@ -227,7 +230,7 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
 
         t0 = clock();
         MPI_Wait(&req, MPI_STATUS_IGNORE);
-        MPI_Isend(sended_points + npts - PTS_MSG_SIZE,
+        MPI_Isend(sended_points + (size_t)npts - PTS_MSG_SIZE,
                   sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank,
                   MPI_COMM_WORLD, &req);
         t += clock() - t0;
@@ -244,7 +247,7 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
       write_progress(density);
     }
     MPI_Wait(&req, MPI_STATUS_IGNORE);
-    MPI_Isend(sended_points + PTS_MSG_SIZE * (npts / PTS_MSG_SIZE),
+    MPI_Isend(sended_points + (size_t)PTS_MSG_SIZE * (npts / PTS_MSG_SIZE),
               sizeof(pts_msg) * PTS_MSG_SIZE, MPI_BYTE, 0, rank, MPI_COMM_WORLD,
               &req);
   }
@@ -345,7 +348,7 @@ int border(unsigned int depth, long int length_strt, double *starting_pts) {
       printf("saving hints \n");
       putc('_', stdout);
       save(filename, ALL_pts, sizeof(double),
-           (world_size - 1) * 2 * length_strt);
+           (size_t)(world_size - 1) * 2 * length_strt);
       free(ALL_pts);
 
     } else {
@@ -427,10 +430,10 @@ void border_start(unsigned int depth, double *starting_pts,
   fflush(stdout);
 }
 
-uint16_t max_uint16(uint16_t *in, size_t n);
+uint16_t max_uint16(const uint16_t *in, size_t n);
 void save_rgb_uint8(uint16_t *R, uint16_t *G, uint16_t *B, char *filename,
                     unsigned nx, unsigned ny) {
-  size_t size = nx * ny;
+  size_t size = (size_t)nx * ny;
   uint8_t *RGB = (uint8_t *)malloc(3 * size * sizeof(uint8_t));
   if (!RGB) {
     printf("Error in save_rgb_uint8, no memory allocated. \n");
@@ -447,9 +450,9 @@ void save_rgb_uint8(uint16_t *R, uint16_t *G, uint16_t *B, char *filename,
   double Bmax = (double)max_uint16(B, size);
 
   for (size_t k = 0; k < size; ++k) {
-    RGB[3 * k] = 255.0 * R[k] / Rmax;
-    RGB[3 * k + 1] = 255 * G[k] / Gmax;
-    RGB[3 * k + 2] = 255 * B[k] / Bmax;
+    RGB[3 * k] = (uint8_t)255 * R[k] / Rmax;
+    RGB[3 * k + 1] = (uint8_t)255 * G[k] / Gmax;
+    RGB[3 * k + 2] = (uint8_t)255 * B[k] / Bmax;
   }
 
   if (fwrite(RGB, sizeof(uint8_t), 3 * size, fp) < (size * 3)) {
@@ -461,8 +464,7 @@ void save_rgb_uint8(uint16_t *R, uint16_t *G, uint16_t *B, char *filename,
   free(RGB);
 }
 
-void save(const char fname[], void *data, unsigned int size,
-          unsigned int n_elements) {
+void save(const char fname[], void *data, size_t size, size_t n_elements) {
   FILE *fp = NULL;
   fp = fopen(fname, "wb");
   if (fp == NULL) {
@@ -476,12 +478,11 @@ void save(const char fname[], void *data, unsigned int size,
 void mirror_traj(unsigned int ny, unsigned int nx, uint16_t *B) {
   // Ensure symetry and add density by adding a mirrored version
   // of the image to itself.
-  unsigned long k;
-  unsigned int i, j;
-  unsigned int b;
+  unsigned long k = 0;
+  uint16_t b = 0;
 
-  for (i = 0; i < ny; i++) {
-    for (j = 0; j < nx; j++) {
+  for (unsigned long i = 0; i < ny; i++) {
+    for (unsigned long j = 0; j < nx; j++) {
       k = (unsigned long)ny * nx - (1 + i) * nx + j;
       b = B[i * nx + j];
       B[i * nx + j] += B[k];
@@ -499,35 +500,52 @@ void parse(int argc, char *argv[], Param *param) {
     __attribute__((fallthrough)); // Shut down the fallthrough warning
 
   case 7:
-    (*param).output_dir = argv[6];
+    param->output_dir = argv[6];
     __attribute__((fallthrough));
 
   case 6:
-    *(*param).depth = atoi(argv[5]);
+    *param->depth = atoi(argv[5]);
 
     __attribute__((fallthrough));
 
   case 5:
-    *(*param).density = (double)atoi(argv[4]);
+    *param->density = (double)atoi(argv[4]);
 
     __attribute__((fallthrough));
 
   case 4:
-    *(*param).minit = atoi(argv[3]);
+    *param->minit = atoi(argv[3]);
 
     __attribute__((fallthrough));
 
   case 3:
-    *(*param).maxit = atoi(argv[2]);
+    *param->maxit = atoi(argv[2]);
 
     __attribute__((fallthrough));
   case 2:
-    *(*param).nx = atoi(argv[1]);
-  }
-  if (strlen((*param).output_dir) > MAX_PATH_LENGTH) {
-    printf("ERROR: output directory path is more than 490 "
-           "characters in length.\n");
+    *param->nx = atoi(argv[1]);
+    break;
+  default:
+    printf("Error : provide a correct number of arguments\n");
     exit(1);
+    break;
+  }
+
+  size_t outdir_str_len = strlen(param->output_dir);
+  if (strlen(param->output_dir) + 1 >= MAX_PATH_LENGTH) {
+    printf("ERROR: output directory path is more than %u "
+           "characters in length.\n",
+           MAX_PATH_LENGTH);
+    exit(1);
+  }
+
+  // Adding terminal / for the directory in case it is lacking
+  if (param->output_dir[outdir_str_len - 1] != '/') {
+    param->output_dir = NULL;
+    param->output_dir = (char *)calloc(outdir_str_len + 2, sizeof(char));
+    memcpy(param->output_dir, argv[6], outdir_str_len);
+    param->output_dir[outdir_str_len] = '/';
+    param->output_dir[outdir_str_len + 1] = '\0';
   }
 }
 
@@ -535,11 +553,7 @@ void export_param(Param param) {
   FILE *fptr = NULL;
   char filename[MAX_PATH_LENGTH + 21] = {'\0'};
   unsigned outdir_str_len = strlen(param.output_dir);
-  strncpy(filename, param.output_dir, MAX_PATH_LENGTH);
-  if (param.output_dir[outdir_str_len - 1] != '/') {
-    filename[outdir_str_len] = '/';
-    outdir_str_len += 1;
-  }
+  strncpy(filename, param.output_dir, MAX_PATH_LENGTH + 20 - outdir_str_len);
   strncat(filename, "param.txt", 10);
 
   fptr = fopen(filename, "w+");
@@ -570,12 +584,12 @@ void write_progress(double density) {
   fclose(fptr);
 }
 
-uint16_t max_uint16(uint16_t *in, size_t n) {
+uint16_t max_uint16(const uint16_t *in, size_t n) {
   double max = 0;
   for (size_t k = 0; k < n; k++) {
     if (*(in + k) > max) {
       max = *(in + k);
     }
   }
-  return max;
+  return (uint16_t)max;
 }

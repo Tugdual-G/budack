@@ -6,6 +6,7 @@
 #define BUDACK_CORE_H_
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #define DOMAIN_BOUND_XM -2.3
 #define DOMAIN_BOUND_XP 1.3
@@ -13,7 +14,7 @@
 
 #define PTS_MSG_SIZE 20     // number of points sent in each message
 #define LENGTH_STRT 50000   // number of hints/poles to generate
-#define MAX_PATH_LENGTH 490 // maximum length of the output path string
+#define MAX_PATH_LENGTH 512 // maximum length of the output path string
 #define PARAM_FNAME "param.txt"
 #define HINTS_FNAME "hintsfiles/hints"
 
@@ -36,7 +37,7 @@ typedef struct {
 } Param;
 
 void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
-                       double *x_b, double *y_b, unsigned int nx,
+                       const double *x_b, const double *y_b, unsigned int nx,
                        unsigned int ny);
 /*
 ** Fills the input array with the trajectory of the provided starting point.
@@ -51,7 +52,8 @@ void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
 */
 
 void trajectories(double density, unsigned int maxit, unsigned int minit,
-                  double *starting_pts, unsigned int length_strt, double dx);
+                  const double *starting_pts, unsigned int length_strt,
+                  double dx);
 /* Finds the starting points which are then sent to the master process.
 ** Tree ranges of escape times are used to generate rgb values.
 ** Input :
@@ -95,8 +97,7 @@ void border_start(unsigned int depth, double *starting_pts,
 **     - starting_pts    starting points having the right escape times
 */
 
-void save(const char fname[], void *data, unsigned int size,
-          unsigned int n_elements);
+void save(const char fname[], void *data, size_t size, size_t n_elements);
 
 void mirror_traj(unsigned int ny, unsigned int nx, uint16_t *B);
 

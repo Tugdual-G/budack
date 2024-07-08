@@ -58,8 +58,8 @@ int main(int argc, char *argv[]) {
   double dx = (x_b[1] - x_b[0]) / nx;
   unsigned int ny = 2 * (unsigned int)(y_b[1] / dx);
   param.ny = &ny;
-  y_b[0] = -((int)ny / 2) * dx;
-  y_b[1] = ((int)ny / 2) * dx;
+  y_b[0] = -((double)ny / 2) * dx;
+  y_b[1] = ((double)ny / 2) * dx;
 
   switch (rank) {
   case 0: {

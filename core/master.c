@@ -1,21 +1,17 @@
 /*
-** The master process gathers starting points to iterate and
-** plots the current state of the computation.
+** The master process gathers starting points to iterate,
+** draw their trajectory in memory and plots the current state of the
+** computation.
 */
 #include "master.h"
 #include "budack_core.h"
 #include "opengl/render.h"
 #include "tiff_images.h"
-// #include <math.h>
 #include <mpi.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// #include <sys/stat.h>
-// #include <sys/types.h>
-#include <stdint.h>
-#include <time.h>
-// #include <unistd.h>
 #include <time.h>
 
 #define KiB_SIZE 1024.0
@@ -68,9 +64,9 @@ int master(int world_size, Param param, double x_b[2], double y_b[2]) {
   ////////////////////////////////////////////////
 
   uint16_t *R_16 = NULL, *G_16 = NULL, *B_16 = NULL;
-  R_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
-  G_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
-  B_16 = (uint16_t *)calloc(nx * ny, sizeof(uint16_t));
+  R_16 = (uint16_t *)calloc((size_t)nx * ny, sizeof(uint16_t));
+  G_16 = (uint16_t *)calloc((size_t)nx * ny, sizeof(uint16_t));
+  B_16 = (uint16_t *)calloc((size_t)nx * ny, sizeof(uint16_t));
   if (!B_16 || !R_16 || !G_16) {
     printf("\n Error, no memory allocated for trajectories sum \n");
     exit(1);
@@ -90,17 +86,14 @@ int master(int world_size, Param param, double x_b[2], double y_b[2]) {
   mirror_traj(ny, nx, R_16);
   mirror_traj(ny, nx, G_16);
   mirror_traj(ny, nx, B_16);
-  normalize_16bits(R_16, nx * ny);
-  normalize_16bits(G_16, nx * ny);
-  normalize_16bits(B_16, nx * ny);
+  normalize_16bits(R_16, (size_t)nx * ny);
+  normalize_16bits(G_16, (size_t)nx * ny);
+  normalize_16bits(B_16, (size_t)nx * ny);
 
   // Storing variables on disk
   unsigned outdir_str_len = strlen(param.output_dir);
   char filename[MAX_PATH_LENGTH + 21] = {'\0'};
-  strncpy(filename, param.output_dir, MAX_PATH_LENGTH);
-  if (param.output_dir[outdir_str_len - 1] != '/') {
-    filename[outdir_str_len] = '/';
-  }
+  strncpy(filename, param.output_dir, MAX_PATH_LENGTH + 20 - outdir_str_len);
   strncat(filename, "image.tiff", 11);
 
   write_tiff_16bitsRGB(filename, R_16, G_16, B_16, nx, ny);
@@ -123,7 +116,7 @@ void recieve_and_draw(uint16_t *R, uint16_t *G, uint16_t *B, double x_b[2],
   ** Output :
   **     - R, G, B      trajectories
   */
-  clock_t t0, t = 0;
+  clock_t t0 = 0, t = 0;
   write_progress(0);
   MPI_Request requ;
   int completion_flag = 0;
@@ -317,6 +310,8 @@ int callback(uint16_t *R_subdomain, uint16_t *G_subdomain,
           draw_trajectories(B, rec[i].x, rec[i].y, rec[i].nit, args->x_b,
                             args->y_b, args->nx, args->ny);
           break;
+        default:
+          break;
         }
       }
 
@@ -336,9 +331,9 @@ int callback(uint16_t *R_subdomain, uint16_t *G_subdomain,
     zoom(B, B_subdomain, args->i_ll_redu, args->j_ll_redu, args->nx_redu,
          args->ny_redu, args->nx);
   }
-  max16(R_subdomain, args->nx_redu * args->ny_redu, args->Rmax);
-  max16(G_subdomain, args->nx_redu * args->ny_redu, args->Gmax);
-  max16(B_subdomain, args->nx_redu * args->ny_redu, args->Bmax);
+  max16(R_subdomain, (size_t)args->nx_redu * args->ny_redu, args->Rmax);
+  max16(G_subdomain, (size_t)args->nx_redu * args->ny_redu, args->Gmax);
+  max16(B_subdomain, (size_t)args->nx_redu * args->ny_redu, args->Bmax);
   return (completion_flag != (args->world_size - 1));
 }
 
@@ -412,14 +407,14 @@ void define_zoom(const double x_b[2], const double y_b[2], unsigned int *i_ll,
 
   double dx = (x_b[1] - x_b[0]) / nx;
   double x0 = ZOOM_CENTER_X, y0 = ZOOM_CENTER_Y;
-  double x_ll = (x0 - dx * nx_zoom / 2.0);
+  double x_ll = (x0 - dx * nx_zoom / 2.0); // low left corner
   double y_ll = (y0 - dx * ny_zoom / 2.0);
-  double x_tr = (x0 + dx * nx_zoom / 2.0);
+  double x_tr = (x0 + dx * nx_zoom / 2.0); // top right corner
   double y_tr = (y0 + dx * ny_zoom / 2.0);
 
   // Ensure that the bounding box is included in the domain.
   if (y_ll > y_b[0]) {
-    *i_ll = (y_ll - y_b[0]) / dx;
+    *i_ll = (unsigned int)(y_ll - y_b[0]) / dx;
   } else {
     *i_ll = 0;
   }
@@ -428,7 +423,7 @@ void define_zoom(const double x_b[2], const double y_b[2], unsigned int *i_ll,
   }
 
   if (x_ll > x_b[0]) {
-    *j_ll = (x_ll - x_b[0]) / dx;
+    *j_ll = (unsigned int)(x_ll - x_b[0]) / dx;
   } else {
     *j_ll = 0;
   }
@@ -439,7 +434,8 @@ void define_zoom(const double x_b[2], const double y_b[2], unsigned int *i_ll,
 
 double get_time_diff_seconds(struct timespec t1, struct timespec t0) {
   // Return time difference in seconds.
-  return (1e9 * (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec));
+  return (1e9 * (double)(t1.tv_sec - t0.tv_sec) +
+          (double)(t1.tv_nsec - t0.tv_nsec));
 }
 
 void max16(const uint16_t *X, size_t n, uint16_t *max) {

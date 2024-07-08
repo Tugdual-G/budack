@@ -38,7 +38,7 @@ int slave(int world_size, int rank, Param param, const double x_b[2]) {
   unsigned int length_brdr = LENGTH_STRT / (world_size - 1);
 
   srand((unsigned int)rank + (unsigned int)time(NULL));
-  starting_pts = (double *)calloc(2 * length_brdr, sizeof(double));
+  starting_pts = (double *)calloc(2LU * length_brdr, sizeof(double));
   if (starting_pts == NULL) {
     printf("Error no memory allocated to border points \n");
     exit(1);

@@ -1,0 +1,23 @@
+---
+Checks: "-*,
+        bugprone-*,
+        modernize-*,
+        readability-*,
+        clang-analyzer-*,
+        clang-diagnostic-*,
+        cppcoreguidelines-*,
+        mpi-*,
+        performance-*,
+        -llvmlibc-restrict-system-libc-headers,
+        -readability-identifier-length,
+        -readability-magic-numbers,
+        -cppcoreguidelines-avoid-magic-numbers,
+        -bugprone-easily-swappable-parameters,
+        -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+        -bugprone-narrowing-conversions,cppcoreguidelines-narrowing-conversions,
+"
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle:     none
+...
+
