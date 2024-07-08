@@ -14,7 +14,9 @@ Checks: "-*,
         -cppcoreguidelines-avoid-magic-numbers,
         -bugprone-easily-swappable-parameters,
         -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
-        -bugprone-narrowing-conversions,cppcoreguidelines-narrowing-conversions,
+        -bugprone-narrowing-conversions,
+        -cppcoreguidelines-narrowing-conversions,
+        -readability-uppercase-literal-suffix,
 "
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
