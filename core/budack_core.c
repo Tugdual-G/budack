@@ -69,15 +69,14 @@ void draw_trajectories(uint16_t *M, double x0, double y0, unsigned int nit,
   **  - M         output array
   */
 
-  // Locating the points in space
   // x : real part
   // y : imaginary part
-  // dx is the step of the grid
   double x, y;
-  // dx = (x_b[1] - x_b[0]) / nx;
+
+  // with dx = (x_b[1] - x_b[0]) / nx;
   double inv_dx = (double)nx / (x_b[1] - x_b[0]);
 
-  // - it : number of iteration for one trajectory.
+  // position of the points in the discrete pixel grid
   int i = 0, j = 0;
 
   x = x0;
@@ -128,17 +127,15 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
   // dx is the step of the grid
   double x, y, x0, y0, x2, y2, x_old, y_old;
 
-  // - itraj : number of trajectories satisfying the
-  //           higgher minimal escape time.
-  // - it : number of iteration for one trajectory.
-  size_t i_hint = 0;
-  unsigned int it = 0, cycle_it = 0, max_cycle = 2;
+  size_t i_hint = 0;   // current point index in the starting pts array
+  unsigned int it = 0; // escape-time counter
+  unsigned int cycle_it = 0, max_cycle = 2; // cycle detection
   unsigned int n0 = 0, n1 = 0;
 
-  // - npts : total numbers of points visited for
-  //          the higgest escape time range.
+  // total numbers points written in sended_points array
   unsigned int npts = 0;
 
+  // trajectory divergence flag
   char diverge = 0;
 
   // Current min density.
@@ -150,6 +147,7 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
 
   double density_maxit = 0, density_minit = 0, density_medit = 0;
 
+  // iterate until enough points are found
   while (density < 1.0) {
     // generate starting points
     y0 = starting_pts[(i_hint) % ((size_t)2 * length_strt)] +
@@ -160,6 +158,7 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
     it = 0;
     cycle_it = 0;
     max_cycle = 2;
+
     x_old = x0;
     y_old = y0;
     x = x0;
@@ -223,7 +222,11 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
       density = min3_double(density_minit, density_medit, density_maxit);
       ++npts;
 
+      // send data when PTS_MSG_SIZE points are found
+      // the sended points buffer in filled in a periodic maner
       if (npts % PTS_MSG_SIZE == 0) {
+
+        // to monitor progress since MPI does not allow flush anymore
         if (rank == 1 && npts % (PTS_MSG_SIZE * 2) == 0) {
           write_progress(density);
         }
@@ -239,6 +242,7 @@ void trajectories(double D, unsigned int maxit, unsigned int minit,
     }
   }
 
+  // send the remaining points if there is some
   if (npts % PTS_MSG_SIZE != 0) {
     for (unsigned char i = npts; i < PTS_MSG_SIZE * 2; ++i) {
       sended_points[i].color = 0;
