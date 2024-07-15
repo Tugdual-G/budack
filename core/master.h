@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 // sweet spot
-#define ZOOM_CENTER_X -1
+#define ZOOM_CENTER_X -1.0
 #define ZOOM_CENTER_Y 0.35
 
 typedef struct {

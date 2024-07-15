@@ -406,7 +406,8 @@ void define_zoom(const double x_b[2], const double y_b[2], unsigned int *i_ll,
   */
 
   double dx = (x_b[1] - x_b[0]) / nx;
-  double x0 = ZOOM_CENTER_X, y0 = ZOOM_CENTER_Y;
+  double x0 = ZOOM_CENTER_X;
+  double y0 = ZOOM_CENTER_Y;
   double x_ll = (x0 - dx * nx_zoom / 2.0); // low left corner
   double y_ll = (y0 - dx * ny_zoom / 2.0);
   double x_tr = (x0 + dx * nx_zoom / 2.0); // top right corner
@@ -414,7 +415,7 @@ void define_zoom(const double x_b[2], const double y_b[2], unsigned int *i_ll,
 
   // Ensure that the bounding box is included in the domain.
   if (y_ll > y_b[0]) {
-    *i_ll = (unsigned int)(y_ll - y_b[0]) / dx;
+    *i_ll = (unsigned int)((y_ll - y_b[0]) / dx);
   } else {
     *i_ll = 0;
   }
@@ -423,7 +424,7 @@ void define_zoom(const double x_b[2], const double y_b[2], unsigned int *i_ll,
   }
 
   if (x_ll > x_b[0]) {
-    *j_ll = (unsigned int)(x_ll - x_b[0]) / dx;
+    *j_ll = (unsigned int)((x_ll - x_b[0]) / dx);
   } else {
     *j_ll = 0;
   }
